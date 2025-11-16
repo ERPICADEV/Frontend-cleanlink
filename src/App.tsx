@@ -3,12 +3,17 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Landing from "./pages/Landing";
+import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import CreatePost from "./pages/CreatePost";
 import PopularProblems from "./pages/PopularProblems";
 import PostDetail from "./pages/PostDetail";
 import LocationSettings from "./pages/LocationSettings";
+import Notifications from "./pages/Notifications";
+import Settings from "./pages/Settings";
+import Rewards from "./pages/Rewards";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,11 +25,16 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/landing" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/" element={<Home />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/create-post" element={<CreatePost />} />
           <Route path="/popular" element={<PopularProblems />} />
           <Route path="/post/:id" element={<PostDetail />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/rewards" element={<Rewards />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/settings/location" element={<LocationSettings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

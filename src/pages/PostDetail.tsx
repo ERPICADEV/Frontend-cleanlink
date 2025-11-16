@@ -1,6 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowUp, ArrowDown, MapPin, Clock, User } from "lucide-react";
+import { ArrowLeft, ArrowUp, ArrowDown, MapPin, Clock, User, Share2, Bookmark, MessageSquare, CheckCircle } from "lucide-react";
 import Header from "@/components/Header";
+import BottomNav from "@/components/BottomNav";
+import StatusPill from "@/components/StatusPill";
+import CommentItem from "@/components/CommentItem";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,48 +48,54 @@ const PostDetail = () => {
     return colors[status] || colors.Pending;
   };
 
+  const timeline = [
+    { status: "Posted", date: issue.timeAgo, completed: true },
+    { status: "Community Verified", date: "1 hour ago", completed: true },
+    { status: "MCD Viewed", date: "30 mins ago", completed: issue.status !== "Pending" },
+    { status: "Assigned to team", date: "", completed: issue.status === "Resolved" || issue.status === "Cleaned" },
+    { status: "Resolved", date: "", completed: issue.status === "Resolved" || issue.status === "Cleaned" },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Header />
 
       <main className="container mx-auto px-4 py-6 max-w-4xl">
         <Button
           variant="ghost"
-          onClick={() => navigate("/")}
+          onClick={() => navigate(-1)}
           className="mb-4"
           size="sm"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Feed
+          Back
         </Button>
 
-        <div className="bg-card border border-separator rounded overflow-hidden">
+        <div className="bg-card border border-separator rounded-lg overflow-hidden">
           {/* Header */}
           <div className="p-4 border-b border-separator">
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-3">
               <div className="flex flex-col items-center gap-1 pt-1">
-                <button className="text-muted-foreground hover:text-primary">
+                <button className="text-muted-foreground hover:text-primary transition-colors active:scale-95">
                   <ArrowUp className="w-6 h-6" />
                 </button>
                 <span className="text-lg font-bold">{issue.upvotes}</span>
-                <button className="text-muted-foreground hover:text-destructive">
+                <button className="text-muted-foreground hover:text-destructive transition-colors active:scale-95">
                   <ArrowDown className="w-6 h-6" />
                 </button>
               </div>
 
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <Badge variant="outline" className={getCategoryColor(issue.category)}>
                     {issue.category}
                   </Badge>
-                  <Badge variant="outline" className={getStatusColor(issue.status)}>
-                    {issue.status}
-                  </Badge>
+                  <StatusPill status={issue.status as any} />
                 </div>
                 
                 <h1 className="text-2xl font-bold mb-3">{issue.title}</h1>
                 
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
                   <span className="flex items-center gap-1">
                     <User className="w-4 h-4" />
                     {issue.reporterName}
@@ -104,6 +113,39 @@ const PostDetail = () => {
             </div>
           </div>
 
+          {/* Actions Row */}
+          <div className="px-4 py-3 border-b border-separator bg-accent/30">
+            <div className="flex items-center gap-4">
+              <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
+                <MessageSquare className="w-4 h-4" />
+                <span>Comment</span>
+              </button>
+              <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
+                <Share2 className="w-4 h-4" />
+                <span>Share</span>
+              </button>
+              <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
+                <Bookmark className="w-4 h-4" />
+                <span>Save</span>
+              </button>
+            </div>
+          </div>
+
+          {/* AI Summary */}
+          <div className="p-4 border-b border-separator bg-accent/20">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <CheckCircle className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-sm mb-1">AI Check</h3>
+                <p className="text-sm text-muted-foreground">
+                  Likely real (89%) • No duplicates found
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Image */}
           {issue.imageUrl && (
             <img
@@ -115,42 +157,111 @@ const PostDetail = () => {
 
           {/* Description */}
           <div className="p-4 border-b border-separator">
-            <p className="text-foreground">{issue.description}</p>
+            <p className="text-foreground leading-relaxed">{issue.description}</p>
           </div>
+
+          {/* Timeline */}
+          <div className="p-4 border-b border-separator">
+            <h3 className="font-semibold mb-4">Progress Timeline</h3>
+            <div className="space-y-3">
+              {timeline.map((item, index) => (
+                <div key={index} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`w-3 h-3 rounded-full border-2 ${
+                        item.completed
+                          ? "bg-primary border-primary"
+                          : "bg-background border-muted"
+                      }`}
+                    />
+                    {index < timeline.length - 1 && (
+                      <div
+                        className={`w-0.5 h-8 ${
+                          item.completed ? "bg-primary" : "bg-muted"
+                        }`}
+                      />
+                    )}
+                  </div>
+                  <div className="flex-1 pb-4">
+                    <p
+                      className={`text-sm font-medium ${
+                        item.completed ? "text-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      {item.status}
+                    </p>
+                    {item.date && (
+                      <p className="text-xs text-muted-foreground">{item.date}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Reward Banner */}
+          {issue.status === "Cleaned" && (
+            <div className="p-4 bg-primary/10 border-b border-separator">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary rounded-lg">
+                  <CheckCircle className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-primary">You earned +50 Civic Points!</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Thank you for making your community better
+                  </p>
+                </div>
+                <Button size="sm" onClick={() => navigate("/rewards")}>
+                  View Rewards
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Comments Section */}
           <div className="p-4">
-            <h2 className="font-semibold mb-4">Comments</h2>
-            
-            <div className="mb-4">
-              <Textarea placeholder="Add a comment..." rows={3} className="mb-2" />
-              <Button size="sm">Post Comment</Button>
+            <h2 className="font-semibold mb-4 flex items-center gap-2">
+              Comments
+              <span className="text-sm font-normal text-muted-foreground">(12)</span>
+            </h2>
+
+            <div className="space-y-4 mb-4">
+              <CommentItem
+                username="User123"
+                text="This has been an issue for weeks. Needs urgent attention!"
+                timestamp="2 hours ago"
+                upvotes={15}
+              />
+              <CommentItem
+                username="LocalResident"
+                text="Thanks for reporting. I've also seen this problem."
+                timestamp="4 hours ago"
+                upvotes={8}
+              />
+              <CommentItem
+                username="MCDOfficial"
+                text="We have received this report and will dispatch a team soon."
+                timestamp="1 day ago"
+                upvotes={42}
+              />
             </div>
-
-            <div className="space-y-3 text-sm">
-              <div className="border-l-2 border-border pl-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium">User123</span>
-                  <span className="text-xs text-muted-foreground">2 hours ago</span>
-                </div>
-                <p className="text-muted-foreground">
-                  This has been an issue for weeks. Needs urgent attention!
-                </p>
-              </div>
-
-              <div className="border-l-2 border-border pl-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium">LocalResident</span>
-                  <span className="text-xs text-muted-foreground">4 hours ago</span>
-                </div>
-                <p className="text-muted-foreground">
-                  Thanks for reporting. I've also seen this problem.
-                </p>
-              </div>
+            
+            <div className="sticky bottom-20 md:bottom-4 bg-background border border-separator rounded-lg p-3">
+              <Textarea
+                placeholder="Add a comment..."
+                rows={2}
+                className="mb-2 resize-none"
+              />
+              <Button size="sm" className="w-full">
+                Post Comment
+              </Button>
             </div>
           </div>
         </div>
       </main>
+
+      <BottomNav />
     </div>
   );
 };

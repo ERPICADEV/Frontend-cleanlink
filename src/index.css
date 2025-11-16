@@ -36,9 +36,25 @@ All colors MUST be HSL.
     --input: 0 0% 90%;
     --ring: 217 91% 60%;
 
-    --radius: 0.25rem;
+    --radius: 0.5rem;
     
     --separator: 0 0% 90%;
+    
+    /* Civic Points Colors */
+    --civic-bronze: 33 60% 50%;
+    --civic-silver: 0 0% 75%;
+    --civic-gold: 45 93% 47%;
+    
+    /* Status Colors */
+    --status-pending: 43 89% 70%;
+    --status-in-process: 217 91% 60%;
+    --status-resolved: 142 71% 45%;
+    --status-rejected: 0 0% 60%;
+    
+    /* Success/Warning/Info */
+    --success: 142 71% 45%;
+    --warning: 43 89% 70%;
+    --info: 217 91% 60%;
   }
 
   .dark {
@@ -81,5 +97,15 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
