@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Search } from "lucide-react";
-import Navigation from "@/components/Navigation";
-import FloatingActionButton from "@/components/FloatingActionButton";
-import IssueCard from "@/components/IssueCard";
-import { Input } from "@/components/ui/input";
+import { Plus } from "lucide-react";
+import Header from "@/components/Header";
+import RegionSelector from "@/components/RegionSelector";
+import PostRow from "@/components/PostRow";
+import TrendingSidebar from "@/components/TrendingSidebar";
 import { Button } from "@/components/ui/button";
 import { dummyIssues } from "@/lib/dummyData";
 import { useNavigate } from "react-router-dom";
@@ -12,72 +12,74 @@ const categories = ["All", "Garbage", "Road", "Water", "Trees", "Electricity", "
 
 const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
   const filteredIssues = dummyIssues.filter((issue) => {
     const matchesCategory = selectedCategory === "All" || issue.category === selectedCategory;
-    const matchesSearch =
-      issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      issue.location.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return matchesCategory;
   });
+
+  const posts = filteredIssues.map(issue => ({
+    ...issue,
+    commentCount: Math.floor(Math.random() * 100) + 5,
+  }));
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Header />
+      <RegionSelector />
 
-      <main className="container mx-auto px-4 py-6 max-w-4xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Community Reports</h1>
-          <p className="text-muted-foreground">
-            Help improve your city by reporting and validating civic issues
-          </p>
-        </div>
-
-        <div className="mb-6 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              placeholder="Search by area or issue..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {categories.map((category) => (
-              <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                onClick={() => setSelectedCategory(category)}
-                className="whitespace-nowrap"
-              >
-                {category}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-4 pb-20">
-          {filteredIssues.length > 0 ? (
-            filteredIssues.map((issue) => (
-              <IssueCard
-                key={issue.id}
-                issue={issue}
-                onClick={() => navigate(`/issue/${issue.id}`)}
-              />
-            ))
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>No issues found matching your criteria</p>
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex gap-6">
+          {/* Main Feed */}
+          <main className="flex-1 max-w-3xl">
+            {/* Category Filter */}
+            <div className="flex gap-2 overflow-x-auto pb-3 mb-3 border-b border-separator">
+              {categories.map((category) => (
+                <Button
+                  key={category}
+                  variant={selectedCategory === category ? "default" : "ghost"}
+                  onClick={() => setSelectedCategory(category)}
+                  size="sm"
+                  className="whitespace-nowrap"
+                >
+                  {category}
+                </Button>
+              ))}
             </div>
-          )}
-        </div>
-      </main>
 
-      <FloatingActionButton />
+            {/* Post Feed */}
+            <div className="bg-card border border-separator rounded">
+              {posts.length > 0 ? (
+                posts.map((post) => (
+                  <PostRow
+                    key={post.id}
+                    post={post}
+                    onClick={() => navigate(`/post/${post.id}`)}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>No issues found</p>
+                </div>
+              )}
+            </div>
+          </main>
+
+          {/* Sidebar */}
+          <aside className="hidden lg:block w-80 flex-shrink-0">
+            <TrendingSidebar />
+          </aside>
+        </div>
+      </div>
+
+      {/* Floating Action Button */}
+      <button
+        onClick={() => navigate("/create-post")}
+        className="fixed bottom-6 right-6 bg-primary text-primary-foreground rounded-full p-4 shadow-lg hover:shadow-xl transition-shadow"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
     </div>
   );
 };
