@@ -65,7 +65,11 @@ const Profile = () => {
               <p className="text-sm text-muted-foreground mb-3">South Delhi, Delhi</p>
               
               <div className="flex gap-2 flex-wrap">
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate("/profile/edit")}
+                >
                   Edit Profile
                 </Button>
                 <Button variant="outline" size="sm">

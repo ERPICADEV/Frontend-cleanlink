@@ -7,6 +7,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
 import CreatePost from "./pages/CreatePost";
 import PopularProblems from "./pages/PopularProblems";
 import PostDetail from "./pages/PostDetail";
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Home />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/create-post" element={<CreatePost />} />
           <Route path="/popular" element={<PopularProblems />} />
           <Route path="/post/:id" element={<PostDetail />} />
