@@ -1,92 +1,86 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import PostRow from "@/components/PostRow";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import BottomNav from "@/components/BottomNav";
+import FloatingActionButton from "@/components/FloatingActionButton";
 import { dummyIssues } from "@/lib/dummyData";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { TrendingUp, MapPin } from "lucide-react";
 
 const PopularProblems = () => {
-  const [region, setRegion] = useState("city");
+  const [view, setView] = useState<"local" | "trending">("local");
   const navigate = useNavigate();
 
-  const posts = dummyIssues.map(issue => ({
-    ...issue,
-    commentCount: Math.floor(Math.random() * 100) + 5,
-  })).sort((a, b) => b.upvotes - a.upvotes);
+  const posts = dummyIssues
+    .map(issue => ({
+      ...issue,
+      commentCount: Math.floor(Math.random() * 100) + 5,
+    }))
+    .sort((a, b) => b.upvotes - a.upvotes)
+    .slice(0, 20);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-16 md:pb-0">
       <Header />
-
-      <main className="container mx-auto px-4 py-6 max-w-3xl">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold mb-1">Popular Problems</h1>
-            <p className="text-sm text-muted-foreground">
-              Trending issues based on location
-            </p>
+      
+      {/* View Toggle */}
+      <div className="border-b border-border bg-card sticky top-12 z-40">
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="flex gap-0 py-2">
+            <button
+              onClick={() => setView("local")}
+              className={cn(
+                "flex-1 py-2.5 px-4 text-sm font-medium transition-all rounded-lg flex items-center justify-center gap-2",
+                view === "local"
+                  ? "text-primary bg-primary/10"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <MapPin className="w-4 h-4" />
+              Popular in Your Area
+            </button>
+            <button
+              onClick={() => setView("trending")}
+              className={cn(
+                "flex-1 py-2.5 px-4 text-sm font-medium transition-all rounded-lg flex items-center justify-center gap-2",
+                view === "trending"
+                  ? "text-primary bg-primary/10"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <TrendingUp className="w-4 h-4" />
+              Trending in India
+            </button>
           </div>
-
-          <Select value={region} onValueChange={setRegion}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="city">Your City</SelectItem>
-              <SelectItem value="state">Your State</SelectItem>
-              <SelectItem value="india">All India</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
+      </div>
 
-        <div className="space-y-6">
-          <section>
-            <h2 className="text-lg font-semibold mb-3">Trending in Your City</h2>
-            <div className="bg-card border border-separator rounded">
-              {posts.slice(0, 5).map((post) => (
-                <PostRow
-                  key={post.id}
-                  post={post}
-                  onClick={() => navigate(`/post/${post.id}`)}
-                />
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold mb-3">Trending in Your State</h2>
-            <div className="bg-card border border-separator rounded">
-              {posts.slice(5, 10).map((post) => (
-                <PostRow
-                  key={post.id}
-                  post={post}
-                  onClick={() => navigate(`/post/${post.id}`)}
-                />
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold mb-3">Trending in India</h2>
-            <div className="bg-card border border-separator rounded">
-              {posts.slice(10, 15).map((post) => (
-                <PostRow
-                  key={post.id}
-                  post={post}
-                  onClick={() => navigate(`/post/${post.id}`)}
-                />
-              ))}
-            </div>
-          </section>
+      <div className="container mx-auto px-0 sm:px-4 py-0 sm:py-4">
+        <div className="max-w-3xl mx-auto">
+          {/* Posts Feed */}
+          <div className="bg-card sm:rounded-lg sm:border sm:border-border overflow-hidden">
+            {posts.map((post, index) => (
+              <div key={post.id} className="relative">
+                <div className="absolute left-0 top-0 bottom-0 w-8 flex items-center justify-center">
+                  <span className="text-lg font-bold text-muted-foreground/40">
+                    {index + 1}
+                  </span>
+                </div>
+                <div className="pl-8">
+                  <PostRow
+                    post={post}
+                    onClick={() => navigate(`/post/${post.id}`)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </main>
+      </div>
+
+      <FloatingActionButton />
+      <BottomNav />
     </div>
   );
 };

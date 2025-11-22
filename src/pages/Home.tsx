@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Search } from "lucide-react";
 import Header from "@/components/Header";
 import RegionSelector from "@/components/RegionSelector";
 import PostRow from "@/components/PostRow";
@@ -28,47 +27,31 @@ const Home = () => {
   }));
 
   return (
-    <div className="min-h-screen bg-background pb-16 sm:pb-20 md:pb-0">
+    <div className="min-h-screen bg-background pb-16 md:pb-0">
       <FirstTimeTooltip />
       <Header />
       
-      {/* Region Strip */}
-      <div className="border-b border-border">
-        <div className="container mx-auto px-3 sm:px-4 py-2">
+      {/* Region Strip - Clean & Minimal */}
+      <div className="border-b border-border bg-card">
+        <div className="container mx-auto px-3 sm:px-4 py-1.5 flex items-center justify-between">
           <RegionSelector />
         </div>
       </div>
 
-      <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 md:flex md:gap-6">
+      <div className="container mx-auto px-0 sm:px-4 py-0 sm:py-4 md:flex md:gap-6">
         {/* Main Feed */}
         <div className="flex-1 max-w-3xl mx-auto">
-          {/* Search Bar - Mobile */}
-          <div className="md:hidden mb-3 sm:mb-4">
-            <div 
-              className="relative cursor-pointer"
-              onClick={() => navigate('/search')}
-            >
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search problems, locations..."
-                className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-sm touch-manipulation"
-                readOnly
-              />
-            </div>
-          </div>
-
-          {/* Category Filters */}
-          <div className="flex gap-1.5 sm:gap-2 mb-3 sm:mb-4 overflow-x-auto pb-2 scrollbar-hide -mx-3 sm:mx-0 px-3 sm:px-0">
+          {/* Category Filters - Horizontal Scroll */}
+          <div className="flex gap-2 mb-0 sm:mb-4 overflow-x-auto pb-2 pt-3 px-3 sm:px-0 scrollbar-hide border-b border-border bg-card sm:bg-transparent sm:border-0">
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
                 className={cn(
-                  "px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors touch-manipulation",
+                  "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all touch-manipulation flex-shrink-0",
                   selectedCategory === category
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted text-muted-foreground hover:bg-accent"
                 )}
               >
                 {category}
@@ -76,8 +59,8 @@ const Home = () => {
             ))}
           </div>
 
-          {/* Posts Feed */}
-          <div className="bg-background border border-border rounded-lg overflow-hidden">
+          {/* Posts Feed - Clean Reddit Style */}
+          <div className="bg-card sm:rounded-lg sm:border sm:border-border overflow-hidden">
             {posts.length > 0 ? (
               posts.map((post) => (
                 <PostRow
@@ -87,8 +70,8 @@ const Home = () => {
                 />
               ))
             ) : (
-              <div className="text-center py-12 px-4">
-                <p className="text-muted-foreground mb-2">No posts here yet</p>
+              <div className="text-center py-16 px-4">
+                <p className="text-muted-foreground mb-2 font-medium">No posts here yet</p>
                 <p className="text-sm text-muted-foreground">
                   Be the first to report in your area!
                 </p>
