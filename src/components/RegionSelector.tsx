@@ -1,69 +1,44 @@
-import { useState } from "react";
+import { MapPin, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const regions = [
+  "Delhi",
+  "Mumbai",
+  "Bangalore",
+  "Chennai",
+  "Kolkata",
+  "Hyderabad",
+  "Pune",
+  "Ahmedabad",
+];
 
 const RegionSelector = () => {
-  const [country, setCountry] = useState("India");
-  const [state, setState] = useState("");
-  const [city, setCity] = useState("");
-
-  const states = ["Delhi", "Maharashtra", "Karnataka", "Tamil Nadu", "Rajasthan"];
-  const cities: Record<string, string[]> = {
-    Delhi: ["Central Delhi", "North Delhi", "South Delhi", "East Delhi", "West Delhi"],
-    Maharashtra: ["Mumbai", "Pune", "Nagpur", "Nashik"],
-    Karnataka: ["Bangalore", "Mysore", "Mangalore"],
-    "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai"],
-    Rajasthan: ["Jaipur", "Jodhpur", "Udaipur"],
-  };
-
   return (
-    <div className="bg-accent/30 border-b border-separator py-3">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center gap-4 flex-wrap">
-          <span className="text-sm text-foreground font-medium">
-            Choose your region to personalize your feed:
-          </span>
-          
-          <Select value={country} onValueChange={setCountry}>
-            <SelectTrigger className="w-32 h-8 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="India">India</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={state} onValueChange={(val) => { setState(val); setCity(""); }}>
-            <SelectTrigger className="w-40 h-8 text-sm">
-              <SelectValue placeholder="Select State" />
-            </SelectTrigger>
-            <SelectContent>
-              {states.map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {state && (
-            <Select value={city} onValueChange={setCity}>
-              <SelectTrigger className="w-40 h-8 text-sm">
-                <SelectValue placeholder="Select City" />
-              </SelectTrigger>
-              <SelectContent>
-                {cities[state]?.map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-      </div>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="h-8 px-2 text-xs sm:text-sm text-muted-foreground hover:text-foreground gap-1"
+        >
+          <MapPin className="w-3.5 h-3.5" />
+          <span>Delhi</span>
+          <ChevronDown className="w-3.5 h-3.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-48">
+        {regions.map((region) => (
+          <DropdownMenuItem key={region}>
+            {region}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 

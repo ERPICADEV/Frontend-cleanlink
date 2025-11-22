@@ -8,37 +8,41 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* Reddit-inspired clean palette */
     --background: 0 0% 100%;
-    --foreground: 0 0% 13%;
+    --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 13%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 13%;
+    --popover-foreground: 0 0% 10%;
 
-    --primary: 217 91% 60%;
+    /* Clean orange accent like Reddit */
+    --primary: 14 100% 53%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 13%;
+    /* Ultra-light backgrounds */
+    --secondary: 0 0% 98%;
+    --secondary-foreground: 0 0% 10%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 0 0% 97%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 0 0% 90%;
-    --accent-foreground: 0 0% 13%;
+    --accent: 0 0% 95%;
+    --accent-foreground: 0 0% 10%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 217 91% 60%;
+    /* Minimal borders */
+    --border: 0 0% 93%;
+    --input: 0 0% 93%;
+    --ring: 14 100% 53%;
 
     --radius: 0.5rem;
     
-    --separator: 0 0% 90%;
+    --separator: 0 0% 93%;
     
     /* Civic Points Colors */
     --civic-bronze: 33 60% 50%;
@@ -58,35 +62,36 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 0 0% 10%;
+    /* Reddit-style dark mode */
+    --background: 0 0% 7%;
     --foreground: 0 0% 95%;
 
-    --card: 0 0% 12%;
+    --card: 0 0% 10%;
     --card-foreground: 0 0% 95%;
 
-    --popover: 0 0% 12%;
+    --popover: 0 0% 10%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 217 91% 60%;
+    --primary: 14 100% 53%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 18%;
+    --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 95%;
 
-    --muted: 0 0% 18%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 0 0% 20%;
+    --accent: 0 0% 16%;
     --accent-foreground: 0 0% 95%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 217 91% 60%;
+    --border: 0 0% 16%;
+    --input: 0 0% 16%;
+    --ring: 14 100% 53%;
     
-    --separator: 0 0% 18%;
+    --separator: 0 0% 16%;
   }
 }
 
@@ -96,7 +101,13 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  
+  /* Reddit-style smooth font rendering */
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 

@@ -1,178 +1,184 @@
-import { User, Award, TrendingUp, LogOut, Settings } from "lucide-react";
+import { useState } from "react";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import PostRow from "@/components/PostRow";
 import CivicBadge from "@/components/CivicBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { dummyIssues } from "@/lib/dummyData";
+import { MapPin, Edit, Award, FileText, MessageSquare, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
   const navigate = useNavigate();
-  const userReports = dummyIssues.slice(0, 5).map(issue => ({
-    ...issue,
-    commentCount: Math.floor(Math.random() * 100) + 5,
-  }));
-  const civilPoints = 485;
+  const [activeTab, setActiveTab] = useState<"posts" | "comments">("posts");
 
+  const userReports = [
+    {
+      id: "1",
+      title: "Overflowing garbage bins near Park Street",
+      description: "Multiple garbage bins are overflowing...",
+      imageUrl: "https://images.unsplash.com/photo-1604187351574-c75ca79f5807?w=400",
+      location: "Park Street, Sector 12",
+      category: "Garbage",
+      upvotes: 47,
+      downvotes: 3,
+      commentCount: 12,
+      timeAgo: "2 days ago",
+    },
+    {
+      id: "2",
+      title: "Broken streetlight creating safety concern",
+      description: "Streetlight has been non-functional for weeks...",
+      imageUrl: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=400",
+      location: "MG Road",
+      category: "Electricity",
+      upvotes: 34,
+      downvotes: 1,
+      commentCount: 8,
+      timeAgo: "1 week ago",
+    },
+  ];
+
+  const civilPoints = 620;
   const levels = [
-    { name: "New Reporter", min: 0, max: 199, badge: "bronze" as const },
-    { name: "Active Contributor", min: 200, max: 499, badge: "silver" as const },
-    { name: "Community Steward", min: 500, max: 999, badge: "gold" as const },
-    { name: "Eco Champion", min: 1000, max: 999999, badge: "gold" as const },
+    { name: "Aware Citizen", min: 0, max: 199, badge: "bronze" },
+    { name: "Active Helper", min: 200, max: 499, badge: "silver" },
+    { name: "Community Guardian", min: 500, max: 999, badge: "silver" },
+    { name: "Civic Hero", min: 1000, max: Infinity, badge: "gold" },
   ];
 
   const currentLevel = levels.find(
     (level) => civilPoints >= level.min && civilPoints <= level.max
   ) || levels[0];
 
-  const progressToNext = levels.findIndex((l) => l === currentLevel) < levels.length - 1
-    ? ((civilPoints - currentLevel.min) / (currentLevel.max - currentLevel.min)) * 100
-    : 100;
-
-  const badges = [
-    { name: "Active Reporter", unlocked: true, level: "bronze" as const },
-    { name: "Community Helper", unlocked: true, level: "silver" as const },
-    { name: "Top Contributor", unlocked: false, level: "gold" as const },
-  ];
+  const progressToNext = currentLevel.max === Infinity
+    ? 100
+    : ((civilPoints - currentLevel.min) / (currentLevel.max - currentLevel.min)) * 100;
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0">
+    <div className="min-h-screen bg-background pb-16 md:pb-0">
       <Header />
 
-      <main className="container mx-auto px-4 py-6 max-w-3xl">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Profile</h1>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/settings")}
-          >
-            <Settings className="w-4 h-4" />
-          </Button>
-        </div>
-
-        <Card className="p-6 mb-6">
-          <div className="flex items-start gap-4">
-            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
-              <User className="w-10 h-10 text-muted-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold mb-1">Rahul Kumar</h2>
-              <p className="text-sm text-muted-foreground mb-3">South Delhi, Delhi</p>
-              
-              <div className="flex gap-2 flex-wrap">
-                <Button 
-                  variant="outline" 
+      <div className="container mx-auto px-0 sm:px-4 py-0 sm:py-4">
+        <div className="max-w-3xl mx-auto">
+          {/* Profile Header */}
+          <Card className="p-6 mb-4 sm:rounded-lg border-x-0 sm:border-x">
+            <div className="flex items-start gap-4">
+              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <span className="text-3xl font-bold text-primary">A</span>
+              </div>
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold mb-1">Arjun Patel</h1>
+                <p className="text-muted-foreground flex items-center gap-1 mb-3">
+                  <MapPin className="w-4 h-4" />
+                  Delhi, India
+                </p>
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => navigate("/profile/edit")}
+                  className="gap-2"
                 >
+                  <Edit className="w-4 h-4" />
                   Edit Profile
                 </Button>
-                <Button variant="outline" size="sm">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </Button>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        {/* Civic Points & Level */}
-        <Card className="p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Award className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">Civic Sense Points</h2>
-          </div>
-          
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-4xl font-bold text-primary">{civilPoints}</div>
-              <div className="flex items-center gap-2 mt-1">
-                <CivicBadge level={currentLevel.badge} size="sm" />
-                <span className="text-sm font-medium text-muted-foreground">
-                  {currentLevel.name}
-                </span>
+          {/* Civic Points */}
+          <Card className="p-6 mb-4 sm:rounded-lg border-x-0 sm:border-x">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Civic Sense Points</p>
+                <p className="text-4xl font-bold text-primary">{civilPoints}</p>
               </div>
+              <CivicBadge level={currentLevel.badge as "bronze" | "silver" | "gold"} size="lg" />
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/rewards")}
-            >
-              View Rewards
-            </Button>
-          </div>
-
-          {progressToNext < 100 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Progress to next level</span>
-                <span>
-                  {currentLevel.max - civilPoints} pts to go
-                </span>
+            
+            <div className="mb-3">
+              <div className="flex justify-between text-sm mb-2">
+                <span className="font-medium">{currentLevel.name}</span>
+                {currentLevel.max !== Infinity && (
+                  <span className="text-muted-foreground">
+                    {currentLevel.max - civilPoints} to next level
+                  </span>
+                )}
               </div>
               <Progress value={progressToNext} className="h-2" />
             </div>
-          )}
-        </Card>
 
-        <Card className="p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">Activity Stats</h2>
-          </div>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground mt-1">Reports</p>
-            </div>
-            <div>
-              <div className="text-2xl font-bold">34</div>
-              <p className="text-xs text-muted-foreground mt-1">Comments</p>
-            </div>
-            <div>
-              <div className="text-2xl font-bold">89</div>
-              <p className="text-xs text-muted-foreground mt-1">Votes</p>
-            </div>
-          </div>
-        </Card>
+            <Button 
+              onClick={() => navigate("/rewards")} 
+              className="w-full gap-2"
+            >
+              <Award className="w-4 h-4" />
+              View Rewards & Perks
+            </Button>
+          </Card>
 
-        <Card className="p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">Achievements</h2>
-          <div className="flex gap-3 flex-wrap">
-            {badges.map((badge) => (
-              <div
-                key={badge.name}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
-                  badge.unlocked
-                    ? "border-primary/20 bg-primary/5"
-                    : "border-muted bg-muted/30 opacity-60"
-                }`}
-              >
-                <CivicBadge level={badge.level} size="sm" />
-                <span className="text-sm font-medium">{badge.name}</span>
-              </div>
-            ))}
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-4 px-4 sm:px-0">
+            <Card className="p-4 text-center">
+              <FileText className="w-6 h-6 mx-auto mb-2 text-primary" />
+              <p className="text-2xl font-bold mb-1">{userReports.length}</p>
+              <p className="text-xs text-muted-foreground">Reports</p>
+            </Card>
+            <Card className="p-4 text-center">
+              <MessageSquare className="w-6 h-6 mx-auto mb-2 text-primary" />
+              <p className="text-2xl font-bold mb-1">34</p>
+              <p className="text-xs text-muted-foreground">Comments</p>
+            </Card>
+            <Card className="p-4 text-center">
+              <TrendingUp className="w-6 h-6 mx-auto mb-2 text-primary" />
+              <p className="text-2xl font-bold mb-1">142</p>
+              <p className="text-xs text-muted-foreground">Upvotes</p>
+            </Card>
           </div>
-        </Card>
 
-        <div>
-          <h2 className="text-lg font-semibold mb-4">My Reports</h2>
-          <div className="bg-card border border-separator rounded-lg overflow-hidden">
-            {userReports.map((post) => (
+          {/* Tabs */}
+          <div className="flex gap-4 border-b border-border mb-0 px-4 sm:px-0 bg-card sm:bg-transparent">
+            <button
+              onClick={() => setActiveTab("posts")}
+              className={`pb-3 px-1 font-medium text-sm transition-colors ${
+                activeTab === "posts"
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted-foreground"
+              }`}
+            >
+              My Reports
+            </button>
+            <button
+              onClick={() => setActiveTab("comments")}
+              className={`pb-3 px-1 font-medium text-sm transition-colors ${
+                activeTab === "comments"
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted-foreground"
+              }`}
+            >
+              Comments
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="bg-card sm:rounded-lg sm:border sm:border-border overflow-hidden">
+            {activeTab === "posts" && userReports.map((report) => (
               <PostRow
-                key={post.id}
-                post={post}
-                onClick={() => navigate(`/post/${post.id}`)}
+                key={report.id}
+                post={report}
+                onClick={() => navigate(`/post/${report.id}`)}
               />
             ))}
+            {activeTab === "comments" && (
+              <div className="p-8 text-center text-muted-foreground">
+                <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Your comments will appear here</p>
+              </div>
+            )}
           </div>
         </div>
-      </main>
+      </div>
 
       <BottomNav />
     </div>
