@@ -2,13 +2,47 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { isAxiosError } from "axios";
 
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/";
+  const { login, signup } = useAuth();
+  const { toast } = useToast();
+
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [showOTP, setShowOTP] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      if (mode === "login") {
+        await login({ email, password });
+        toast({ title: "Welcome back!" });
+      } else {
+        await signup({ email, password, username });
+        toast({ title: "Account created", description: "You're all set!" });
+      }
+      navigate(redirectTo);
+    } catch (error) {
+      let message = "Something went wrong. Please try again.";
+      if (isAxiosError(error)) {
+        message = error.response?.data?.error?.message || message;
+      }
+      toast({ title: "Unable to continue", description: message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,83 +64,65 @@ const Login = () => {
             </h1>
             <p className="text-sm text-muted-foreground">
               {mode === "login"
-                ? "Let's get you inside."
-                : "Start earning Civic Points today!"}
+                ? "Login to keep tracking civic issues."
+                : "Create an account and start reporting civic issues."}
             </p>
           </div>
 
-          {!showOTP ? (
-            <div className="space-y-4">
-              <Button variant="outline" className="w-full">
-                Continue with Google
-              </Button>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-separator" />
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="+91 98765 43210"
-                  />
-                </div>
-                <Button
-                  className="w-full"
-                  onClick={() => setShowOTP(true)}
-                >
-                  Send OTP
-                </Button>
-              </div>
-
-              <div className="text-center">
-                <button
-                  className="text-sm text-primary hover:underline"
-                  onClick={() => setMode(mode === "login" ? "signup" : "login")}
-                >
-                  {mode === "login" ? "New? Sign up" : "Already have an account? Login"}
-                </button>
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
-          ) : (
-            <div className="space-y-4">
+
+            {mode === "signup" && (
               <div className="space-y-2">
-                <Label htmlFor="otp">Enter OTP</Label>
+                <Label htmlFor="username">Username</Label>
                 <Input
-                  id="otp"
-                  type="text"
-                  placeholder="000000"
-                  maxLength={6}
-                  className="text-center text-2xl tracking-widest"
+                  id="username"
+                  placeholder="cleanlink_hero"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
                 />
               </div>
-              <Button
-                className="w-full"
-                onClick={() => navigate("/")}
-              >
-                Verify & Continue
-              </Button>
-              <button
-                className="text-sm text-muted-foreground hover:text-primary w-full"
-                onClick={() => setShowOTP(false)}
-              >
-                Edit number
-              </button>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
             </div>
-          )}
+
+            <Button className="w-full" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Please wait..." : mode === "login" ? "Login" : "Create account"}
+            </Button>
+          </form>
+
+          <div className="text-center">
+            <button
+              className="text-sm text-primary hover:underline"
+              onClick={() => setMode(mode === "login" ? "signup" : "login")}
+            >
+              {mode === "login" ? "Need an account? Sign up" : "Already have an account? Login"}
+            </button>
+          </div>
 
           <p className="text-xs text-center text-muted-foreground">
-            Your location stays private — only MCD sees exact coordinates.
+            Your location stays private — only civic authorities see exact coordinates.
           </p>
         </div>
       </div>

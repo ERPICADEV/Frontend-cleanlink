@@ -1,5 +1,21 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowUp, ArrowDown, MapPin, Clock, User, Share2, Bookmark, MessageSquare, CheckCircle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  ArrowUp,
+  ArrowDown,
+  MapPin,
+  Clock,
+  User,
+  Share2,
+  Bookmark,
+  MessageSquare,
+  CheckCircle,
+  Loader2,
+  RefreshCcw,
+} from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import StatusPill from "@/components/StatusPill";
@@ -7,54 +23,176 @@ import CommentItem from "@/components/CommentItem";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { dummyIssues } from "@/lib/dummyData";
+import {
+  createComment,
+  fetchReportDetail,
+  type ReportComment,
+  type ReportDetail,
+  voteOnReport,
+} from "@/services/reportService";
+import {
+  extractFirstImage,
+  formatCategoryLabel,
+  formatLocationName,
+  formatRelativeTime,
+} from "@/lib/formatters";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
+
+const statusSteps = [
+  { key: "pending", label: "Submitted" },
+  { key: "community_verified", label: "Community verified" },
+  { key: "assigned", label: "Assigned to civic team" },
+  { key: "resolved", label: "Resolved" },
+];
 
 const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const issue = dummyIssues.find((i) => i.id === id);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
-  if (!issue) {
+  const [commentText, setCommentText] = useState("");
+
+  const {
+    data: report,
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useQuery({
+    queryKey: ["report", id],
+    queryFn: () => fetchReportDetail(id!),
+    enabled: Boolean(id),
+    retry: 1,
+  });
+
+  const voteMutation = useMutation({
+    mutationFn: (value: 1 | -1) => voteOnReport(id!, value),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["report", id] }),
+    onError: () => {
+      toast({
+        title: "Voting failed",
+        description: "Try again after a moment.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const commentMutation = useMutation({
+    mutationFn: () => createComment(id!, { text: commentText }),
+    onSuccess: () => {
+      setCommentText("");
+      queryClient.invalidateQueries({ queryKey: ["report", id] });
+      toast({
+        title: "Comment posted",
+        description: "Thanks for adding more context!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Unable to comment",
+        description: "Please try again or log in again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleVote = (value: 1 | -1) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login required",
+        description: "Please login to vote on reports.",
+        variant: "destructive",
+      });
+      navigate(`/login?redirect=/post/${id}`);
+      return;
+    }
+    voteMutation.mutate(value);
+  };
+
+  const handleCommentSubmit = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login required",
+        description: "Login to join the discussion.",
+        variant: "destructive",
+      });
+      navigate(`/login?redirect=/post/${id}`);
+      return;
+    }
+    if (!commentText.trim()) {
+      toast({
+        title: "Comment is empty",
+        description: "Please write something before posting.",
+        variant: "destructive",
+      });
+      return;
+    }
+    commentMutation.mutate();
+  };
+
+  const timeline = useMemo(() => {
+    if (!report) return [];
+    const currentStatus = (report.status ?? "pending").toLowerCase();
+    const currentIndex = statusSteps.findIndex((step) => step.key === currentStatus);
+    return statusSteps.map((step, index) => ({
+      ...step,
+      completed: currentIndex >= index,
+      active: currentStatus === step.key,
+      date: index === 0 ? formatRelativeTime(report.createdAt) : undefined,
+    }));
+  }, [report]);
+
+  const renderComments = (comments?: ReportComment[], depth = 0) => {
+    if (!comments?.length) return null;
+    return comments.map((comment) => (
+      <div key={comment.id} className={cn({ "ml-4": depth > 0 })}>
+        <CommentItem
+          username={comment.author?.username || "Anonymous"}
+          text={comment.text}
+          timestamp={formatRelativeTime(comment.created_at)}
+        />
+        {renderComments(comment.replies, depth + 1)}
+      </div>
+    ));
+  };
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pb-20 md:pb-0">
         <Header />
-        <div className="container mx-auto px-4 py-12 text-center">
-          <h1 className="text-2xl font-bold mb-4">Post not found</h1>
-          <Button onClick={() => navigate("/")}>Return to Home</Button>
-        </div>
+        <main className="container mx-auto px-4 py-10 flex flex-col items-center gap-3 text-muted-foreground">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <p>Loading report…</p>
+        </main>
+        <BottomNav />
       </div>
     );
   }
 
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      Garbage: "bg-orange-500/10 text-orange-700 border-orange-200",
-      Road: "bg-blue-500/10 text-blue-700 border-blue-200",
-      Water: "bg-cyan-500/10 text-cyan-700 border-cyan-200",
-      Trees: "bg-green-500/10 text-green-700 border-green-200",
-      Electricity: "bg-yellow-500/10 text-yellow-700 border-yellow-200",
-      Other: "bg-gray-500/10 text-gray-700 border-gray-200",
-    };
-    return colors[category] || colors.Other;
-  };
+  if (isError || !report) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-12 text-center space-y-4">
+          <h1 className="text-2xl font-bold">Report not found</h1>
+          <Button onClick={() => navigate("/")}>Return to Home</Button>
+        </main>
+      </div>
+    );
+  }
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      Pending: "bg-yellow-500/10 text-yellow-700",
-      "High Priority": "bg-red-500/10 text-red-700",
-      Cleaned: "bg-green-500/10 text-green-700",
-      Rejected: "bg-gray-500/10 text-gray-700",
-    };
-    return colors[status] || colors.Pending;
-  };
-
-  const timeline = [
-    { status: "Posted", date: issue.timeAgo, completed: true },
-    { status: "Community Verified", date: "1 hour ago", completed: true },
-    { status: "MCD Viewed", date: "30 mins ago", completed: issue.status !== "Pending" },
-    { status: "Assigned to team", date: "", completed: issue.status === "Resolved" || issue.status === "Cleaned" },
-    { status: "Resolved", date: "", completed: issue.status === "Resolved" || issue.status === "Cleaned" },
-  ];
+  const imageUrl = extractFirstImage(report.images);
+  const categoryLabel = formatCategoryLabel(report.category);
+  const locationLabel = formatLocationName(report.location);
+  const postedAgo = formatRelativeTime(report.createdAt);
+  const reporterName = report.reporter?.username || report.reporterDisplay || "Anonymous";
+  const commentsCount = report.comments?.length ?? 0;
+  const legitScore = report.aiScore?.legit ?? 0.5;
+  const severityScore = report.aiScore?.severity ?? 0.5;
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
@@ -71,42 +209,50 @@ const PostDetail = () => {
           Back
         </Button>
 
-        <div className="bg-card border border-separator rounded-lg overflow-hidden">
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
           {/* Header */}
-          <div className="p-4 border-b border-separator">
+          <div className="p-4 border-b border-border">
             <div className="flex items-start gap-3">
               <div className="flex flex-col items-center gap-1 pt-1">
-                <button className="text-muted-foreground hover:text-primary transition-colors active:scale-95">
+                <button
+                  className="text-muted-foreground hover:text-primary transition-colors active:scale-95"
+                  aria-label="Upvote"
+                  disabled={voteMutation.isPending}
+                  onClick={() => handleVote(1)}
+                >
                   <ArrowUp className="w-6 h-6" />
                 </button>
-                <span className="text-lg font-bold">{issue.upvotes}</span>
-                <button className="text-muted-foreground hover:text-destructive transition-colors active:scale-95">
+                <span className="text-lg font-bold">{report.upvotes}</span>
+                <button
+                  className="text-muted-foreground hover:text-destructive transition-colors active:scale-95"
+                  aria-label="Downvote"
+                  disabled={voteMutation.isPending}
+                  onClick={() => handleVote(-1)}
+                >
                   <ArrowDown className="w-6 h-6" />
                 </button>
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <Badge variant="outline" className={getCategoryColor(issue.category)}>
-                    {issue.category}
-                  </Badge>
-                  <StatusPill status={issue.status as any} />
+                  <Badge variant="outline">{categoryLabel}</Badge>
+                  <StatusPill status={report.status} />
                 </div>
                 
-                <h1 className="text-2xl font-bold mb-3">{issue.title}</h1>
+                <h1 className="text-2xl font-bold mb-3">{report.title}</h1>
                 
                 <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
                   <span className="flex items-center gap-1">
                     <User className="w-4 h-4" />
-                    {issue.reporterName}
+                    {reporterName}
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    {issue.timeAgo}
+                    {postedAgo}
                   </span>
                   <span className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
-                    {issue.location}
+                    {locationLabel}
                   </span>
                 </div>
               </div>
@@ -114,81 +260,104 @@ const PostDetail = () => {
           </div>
 
           {/* Actions Row */}
-          <div className="px-4 py-3 border-b border-separator bg-accent/30">
-            <div className="flex items-center gap-4">
-              <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
-                <MessageSquare className="w-4 h-4" />
-                <span>Comment</span>
-              </button>
-              <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
-                <Share2 className="w-4 h-4" />
-                <span>Share</span>
-              </button>
-              <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
-                <Bookmark className="w-4 h-4" />
-                <span>Save</span>
-              </button>
-            </div>
+          <div className="px-4 py-3 border-b border-border bg-accent/30 flex items-center gap-4 text-sm text-muted-foreground">
+            <button className="flex items-center gap-1.5 hover:text-primary transition-colors">
+              <MessageSquare className="w-4 h-4" />
+              Comment ({commentsCount})
+            </button>
+            <button className="flex items-center gap-1.5 hover:text-primary transition-colors">
+              <Share2 className="w-4 h-4" />
+              Share
+            </button>
+            <button className="flex items-center gap-1.5 hover:text-primary transition-colors">
+              <Bookmark className="w-4 h-4" />
+              Save
+            </button>
+            <button
+              className="ml-auto text-xs flex items-center gap-1 hover:text-foreground"
+              onClick={() => refetch()}
+            >
+              {isFetching ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <RefreshCcw className="w-3 h-3" />
+              )}
+              Refresh
+            </button>
           </div>
 
           {/* AI Summary */}
-          <div className="p-4 border-b border-separator bg-accent/20">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <CheckCircle className="w-4 h-4 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-sm mb-1">AI Check</h3>
-                <p className="text-sm text-muted-foreground">
-                  Likely real (89%) • No duplicates found
-                </p>
+          {report.aiScore && (
+            <div className="p-4 border-b border-border bg-accent/20">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <CheckCircle className="w-4 h-4 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-sm mb-1">AI insight</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Legitimacy{" "}
+                    <span className="font-semibold text-foreground">
+                      {Math.round(legitScore * 100)}%
+                    </span>{" "}
+                    • Severity{" "}
+                    <span className="font-semibold text-foreground">
+                      {Math.round(severityScore * 100)}%
+                    </span>
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Image */}
-          {issue.imageUrl && (
+          {imageUrl && (
             <img
-              src={issue.imageUrl}
-              alt={issue.title}
+              src={imageUrl}
+              alt={report.title}
               className="w-full max-h-[500px] object-cover"
             />
           )}
 
           {/* Description */}
-          <div className="p-4 border-b border-separator">
-            <p className="text-foreground leading-relaxed">{issue.description}</p>
+          <div className="p-4 border-b border-border">
+            <p className="text-foreground leading-relaxed whitespace-pre-wrap">
+              {report.description}
+            </p>
           </div>
 
           {/* Timeline */}
-          <div className="p-4 border-b border-separator">
+          <div className="p-4 border-b border-border">
             <h3 className="font-semibold mb-4">Progress Timeline</h3>
             <div className="space-y-3">
               {timeline.map((item, index) => (
-                <div key={index} className="flex gap-3">
+                <div key={item.key} className="flex gap-3">
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-3 h-3 rounded-full border-2 ${
+                      className={cn(
+                        "w-3 h-3 rounded-full border-2",
                         item.completed
                           ? "bg-primary border-primary"
                           : "bg-background border-muted"
-                      }`}
+                      )}
                     />
                     {index < timeline.length - 1 && (
                       <div
-                        className={`w-0.5 h-8 ${
+                        className={cn(
+                          "w-0.5 h-8",
                           item.completed ? "bg-primary" : "bg-muted"
-                        }`}
+                        )}
                       />
                     )}
                   </div>
                   <div className="flex-1 pb-4">
                     <p
-                      className={`text-sm font-medium ${
+                      className={cn(
+                        "text-sm font-medium",
                         item.completed ? "text-foreground" : "text-muted-foreground"
-                      }`}
+                      )}
                     >
-                      {item.status}
+                      {item.label}
                     </p>
                     {item.date && (
                       <p className="text-xs text-muted-foreground">{item.date}</p>
@@ -199,62 +368,42 @@ const PostDetail = () => {
             </div>
           </div>
 
-          {/* Reward Banner */}
-          {issue.status === "Cleaned" && (
-            <div className="p-4 bg-primary/10 border-b border-separator">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary rounded-lg">
-                  <CheckCircle className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-primary">You earned +50 Civic Points!</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Thank you for making your community better
-                  </p>
-                </div>
-                <Button size="sm" onClick={() => navigate("/rewards")}>
-                  View Rewards
-                </Button>
-              </div>
-            </div>
-          )}
-
           {/* Comments Section */}
           <div className="p-4">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
               Comments
-              <span className="text-sm font-normal text-muted-foreground">(12)</span>
+              <span className="text-sm font-normal text-muted-foreground">
+                ({commentsCount})
+              </span>
             </h2>
 
-            <div className="space-y-4 mb-4">
-              <CommentItem
-                username="User123"
-                text="This has been an issue for weeks. Needs urgent attention!"
-                timestamp="2 hours ago"
-                upvotes={15}
-              />
-              <CommentItem
-                username="LocalResident"
-                text="Thanks for reporting. I've also seen this problem."
-                timestamp="4 hours ago"
-                upvotes={8}
-              />
-              <CommentItem
-                username="MCDOfficial"
-                text="We have received this report and will dispatch a team soon."
-                timestamp="1 day ago"
-                upvotes={42}
-              />
-            </div>
+            <div className="space-y-4 mb-4">{renderComments(report.comments)}</div>
             
-            <div className="sticky bottom-20 md:bottom-4 bg-background border border-separator rounded-lg p-3">
+            <div className="sticky bottom-20 md:bottom-4 bg-background border border-border rounded-lg p-3 space-y-2">
               <Textarea
-                placeholder="Add a comment..."
-                rows={2}
-                className="mb-2 resize-none"
+                placeholder={
+                  isAuthenticated ? "Add a comment…" : "Login to add a comment"
+                }
+                rows={3}
+                className="resize-none"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                disabled={!isAuthenticated || commentMutation.isPending}
               />
-              <Button size="sm" className="w-full">
-                Post Comment
+              <Button
+                size="sm"
+                className="w-full"
+                onClick={handleCommentSubmit}
+                disabled={commentMutation.isPending}
+              >
+                {commentMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Posting…
+                  </>
+                ) : (
+                  "Post Comment"
+                )}
               </Button>
             </div>
           </div>

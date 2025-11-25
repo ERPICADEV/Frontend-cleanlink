@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Upload, MapPin, Loader2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,73 +14,145 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { Switch } from "@/components/ui/switch";
+import { createReport, type CreateReportPayload } from "@/services/reportService";
+import { useAuth } from "@/contexts/AuthContext";
 
 const categories = ["Garbage", "Road", "Water", "Trees", "Electricity", "Other"];
 
 const CreatePost = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageData, setImageData] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
-  const [location, setLocation] = useState("Auto-detecting location...");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [locationLabel, setLocationLabel] = useState("Detecting location…");
+  const [geo, setGeo] = useState<{ lat?: number; lng?: number }>({});
+  const [areaName, setAreaName] = useState("");
+  const [addressLine, setAddressLine] = useState("");
+  const [city, setCity] = useState("");
+  const [stateName, setStateName] = useState("");
+  const [visibility, setVisibility] = useState<"public" | "masked">("public");
+  const [anonymous, setAnonymous] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+
+  const mutation = useMutation({
+    mutationFn: (payload: CreateReportPayload) => createReport(payload),
+    onSuccess: (data) => {
+      toast({
+        title: "Report submitted",
+        description: "Thanks for helping your neighbourhood.",
+      });
+      navigate(`/post/${data.id}`);
+    },
+    onError: () => {
+      toast({
+        title: "Submission failed",
+        description: "Please try again after some time.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setImagePreview(base64);
+      setImageData(base64);
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleGetLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation(`Lat: ${position.coords.latitude.toFixed(4)}, Long: ${position.coords.longitude.toFixed(4)}`);
-          toast({
-            title: "Location detected",
-            description: "Your current location has been added",
-          });
-        },
-        () => {
-          setLocation("Location access denied");
-          toast({
-            title: "Location error",
-            description: "Please enable location access",
-            variant: "destructive",
-          });
-        }
-      );
+  const detectLocation = () => {
+    if (!("geolocation" in navigator)) {
+      toast({
+        title: "Location unavailable",
+        description: "Geolocation is not supported in this browser.",
+        variant: "destructive",
+      });
+      return;
     }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setGeo({ lat: latitude, lng: longitude });
+        setLocationLabel(`Lat ${latitude.toFixed(4)}, Lng ${longitude.toFixed(4)}`);
+        toast({
+          title: "Location captured",
+          description: "Coordinates added to the report.",
+        });
+      },
+      () => {
+        setLocationLabel("Location access denied");
+        toast({
+          title: "Location error",
+          description: "Please enable location access and try again.",
+          variant: "destructive",
+        });
+      },
+      { enableHighAccuracy: true, timeout: 10_000 }
+    );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    detectLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !description || !category) {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login required",
+        description: "Please login to submit a civic report.",
+        variant: "destructive",
+      });
+      navigate("/login?redirect=/create-post");
+      return;
+    }
+
+    if (!title.trim() || !description.trim() || !category) {
       toast({
         title: "Missing information",
-        description: "Please fill in all required fields",
+        description: "Title, description and category are required.",
         variant: "destructive",
       });
       return;
     }
 
-    setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    if (!geo.lat || !geo.lng) {
+      toast({
+        title: "Add location",
+        description: "Please allow location access or add coordinates manually.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    toast({
-      title: "Post created successfully!",
-      description: "Your report has been shared with the community",
-    });
+    const payload: CreateReportPayload = {
+      title: title.trim(),
+      description: description.trim(),
+      category: category.toLowerCase(),
+      location: {
+        lat: geo.lat,
+        lng: geo.lng,
+        area_name: areaName || undefined,
+        address: addressLine || undefined,
+        city: city || undefined,
+        state: stateName || undefined,
+        country: "India",
+        visibility,
+      },
+      images: imageData ? [{ url: imageData }] : undefined,
+      anonymous,
+    };
 
-    setIsSubmitting(false);
-    navigate("/");
+    mutation.mutate(payload);
   };
 
   return (
@@ -87,16 +160,21 @@ const CreatePost = () => {
       <Header />
 
       <main className="container mx-auto px-4 py-6 max-w-2xl">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">Create New Report</h1>
+        <div className="mb-6 space-y-2">
+          <h1 className="text-2xl font-bold">Create New Report</h1>
           <p className="text-sm text-muted-foreground">
             Got a local problem? Share it with the community!
           </p>
+          {!isAuthenticated && (
+            <div className="text-xs text-amber-600 bg-amber-100 border border-amber-200 px-3 py-2 rounded">
+              You are browsing as a guest. Please login to submit reports.
+            </div>
+          )}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Title</label>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Title</label>
             <Input
               placeholder="Brief title of the issue..."
               value={title}
@@ -104,18 +182,22 @@ const CreatePost = () => {
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-2 block">Description</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Description</label>
             <Textarea
               placeholder="Describe the issue briefly..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
+              maxLength={600}
             />
+            <p className="text-xs text-muted-foreground text-right">
+              {description.length}/600
+            </p>
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-2 block">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
               Upload Image {category === "Garbage" && "(Mandatory for garbage posts)"}
             </label>
             {!imagePreview ? (
@@ -144,7 +226,10 @@ const CreatePost = () => {
                   variant="destructive"
                   size="sm"
                   className="absolute top-2 right-2"
-                  onClick={() => setImagePreview(null)}
+                  onClick={() => {
+                    setImagePreview(null);
+                    setImageData(null);
+                  }}
                 >
                   Remove
                 </Button>
@@ -152,8 +237,8 @@ const CreatePost = () => {
             )}
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-2 block">Category</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Category</label>
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger>
                 <SelectValue placeholder="Select issue category" />
@@ -168,26 +253,85 @@ const CreatePost = () => {
             </Select>
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-2 block">Location</label>
-            <Input value={location} readOnly className="bg-muted" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Area / Landmark</label>
+              <Input
+                placeholder="e.g. Sector 12 park"
+                value={areaName}
+                onChange={(e) => setAreaName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Address</label>
+              <Input
+                placeholder="Street / block"
+                value={addressLine}
+                onChange={(e) => setAddressLine(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">City</label>
+              <Input
+                placeholder="City"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">State</label>
+              <Input
+                placeholder="State"
+                value={stateName}
+                onChange={(e) => setStateName(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">GPS Coordinates</label>
+            <Input value={locationLabel} readOnly className="bg-muted" />
             <Button
               type="button"
               variant="outline"
-              onClick={handleGetLocation}
+              onClick={detectLocation}
               className="w-full mt-2"
               size="sm"
             >
               <MapPin className="w-4 h-4 mr-2" />
-              Auto-detect Location
+              {locationLabel.includes("Lat") ? "Refresh location" : "Auto-detect Location"}
             </Button>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Location visibility</label>
+              <Select value={visibility} onValueChange={(value: "public" | "masked") => setVisibility(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="public">Public (recommended)</SelectItem>
+                  <SelectItem value="masked">Mask exact coordinates</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between border border-border rounded-lg px-4">
+              <div>
+                <p className="text-sm font-medium">Report anonymously</p>
+                <p className="text-xs text-muted-foreground">
+                  Your name will be hidden from the community.
+                </p>
+              </div>
+              <Switch checked={anonymous} onCheckedChange={(checked) => setAnonymous(Boolean(checked))} />
+            </div>
+          </div>
+
+          <Button type="submit" className="w-full" disabled={mutation.isPending}>
+            {mutation.isPending ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Submitting...
+                Submitting…
               </>
             ) : (
               "Submit Report"

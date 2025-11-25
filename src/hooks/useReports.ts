@@ -1,0 +1,31 @@
+import { useMemo } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { fetchReports, type ReportListResponse } from "@/services/reportService";
+
+export interface ReportsFilters {
+  category?: string;
+  status?: string;
+  sort?: "new" | "hot" | "top";
+  reporter_id?: string;
+  limit?: number;
+}
+
+export const useReports = (filters: ReportsFilters = {}) => {
+  const normalizedFilters = useMemo(
+    () => ({ ...filters }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(filters)]
+  );
+
+  return useInfiniteQuery<ReportListResponse>({
+    queryKey: ["reports", normalizedFilters],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) =>
+      fetchReports({
+        ...normalizedFilters,
+        cursor: pageParam,
+      }),
+    getNextPageParam: (lastPage) => lastPage.paging?.next_cursor ?? undefined,
+  });
+};
+
