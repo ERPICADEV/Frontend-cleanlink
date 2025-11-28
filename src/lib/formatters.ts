@@ -1,7 +1,18 @@
 import type { ReportLocation } from "@/services/reportService";
 
-export const formatRelativeTime = (input: string | Date) => {
+export const formatRelativeTime = (input: string | Date | undefined | null): string => {
+  // Add null/undefined check
+  if (!input) {
+    return "Recently";
+  }
+  
   const date = typeof input === "string" ? new Date(input) : input;
+  
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    return "Recently";
+  }
+  
   const diffMs = Date.now() - date.getTime();
   const seconds = Math.round(diffMs / 1000);
 

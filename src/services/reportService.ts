@@ -43,6 +43,20 @@ export interface ReportComment {
   created_at: string;
   updated_at: string;
   replies?: ReportComment[];
+  reportId?: string;
+  reportTitle?: string;
+}
+
+export interface UserComment extends ReportComment {
+  reportId: string;
+  reportTitle: string;
+}
+
+export interface UserCommentsResponse {
+  data: UserComment[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export interface AIScore {
@@ -85,9 +99,11 @@ export interface CreateReportPayload {
   description: string;
   category: string;
   location: ReportLocation & { visibility?: string };
-  images?: Array<string | ReportImagePayload>;
+  images?: string[]; // Change to array of URLs, not base64 data
   anonymous?: boolean;
+  client_idempotency_key?: string;
 }
+
 
 export interface CreateReportResponse {
   id: string;
@@ -121,6 +137,15 @@ export const createReport = async (payload: CreateReportPayload) => {
   return data;
 };
 
+export const uploadImage = async (file: File): Promise<string> => {
+  // For now, we'll use a placeholder service
+  // In production, you'd upload to S3/Cloudinary/your own server
+  return new Promise((resolve) => {
+    // Simulate upload and return a placeholder URL
+    const fakeUrl = `https://picsum.photos/800/600?random=${Date.now()}`;
+    setTimeout(() => resolve(fakeUrl), 1000);
+  });
+};
 export interface VoteResponse {
   report_id: string;
   upvotes: number;
@@ -140,6 +165,39 @@ export const createComment = async (
 ) => {
   const { data } = await apiClient.post(`/reports/${reportId}/comments`, payload);
   return data as ReportComment;
+};
+
+export const updateComment = async (commentId: string, text: string) => {
+  const { data } = await apiClient.patch<ReportComment>(`/reports/comments/${commentId}`, { text });
+  return data;
+};
+
+export const deleteComment = async (commentId: string) => {
+  const { data } = await apiClient.delete<{ message: string }>(`/reports/comments/${commentId}`);
+  return data;
+};
+
+export interface ReportUpdateData {
+  title?: string;
+  description?: string;
+  category?: string;
+  images?: string[];
+  location?: ReportLocation;
+}
+
+export const updateReport = async (reportId: string, updates: ReportUpdateData) => {
+  const { data } = await apiClient.patch<ReportDetail>(`/reports/${reportId}`, updates);
+  return data;
+};
+
+export const fetchUserComments = async (params?: {
+  limit?: number;
+  offset?: number;
+}) => {
+  const { data } = await apiClient.get<UserCommentsResponse>("/users/me/comments", {
+    params,
+  });
+  return data;
 };
 
 export interface MapFeature {

@@ -2,6 +2,11 @@ import { ArrowUp, ArrowDown, MapPin, Clock } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { voteOnReport } from "@/services/reportService";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export interface Issue {
   id: string;
@@ -23,6 +28,74 @@ interface IssueCardProps {
 }
 
 const IssueCard = ({ issue, onClick }: IssueCardProps) => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const voteMutation = useMutation({
+    mutationFn: (value: 1 | -1) => voteOnReport(issue.id, value),
+    onMutate: async (value) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['reports'] });
+      
+      // Snapshot the previous value
+      const previousReports = queryClient.getQueryData(['reports']);
+      
+      // Optimistically update the UI
+      queryClient.setQueryData(['reports'], (old: any) => {
+        if (!old?.pages) return old;
+        
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            data: page.data.map((report: any) =>
+              report.id === issue.id
+                ? {
+                    ...report,
+                    upvotes: value === 1 ? report.upvotes + 1 : report.upvotes,
+                    downvotes: value === -1 ? report.downvotes + 1 : report.downvotes,
+                  }
+                : report
+            ),
+          })),
+        };
+      });
+      
+      return { previousReports };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      queryClient.setQueryData(['reports'], context?.previousReports);
+      toast({
+        title: "Voting failed",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      // Refetch to ensure sync with server
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+    },
+  });
+
+  const handleVote = (value: 1 | -1, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      toast({
+        title: "Login required",
+        description: "Please login to vote on reports",
+        variant: "destructive",
+      });
+      navigate(`/login?redirect=/`);
+      return;
+    }
+    
+    voteMutation.mutate(value);
+  };
+
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
       Garbage: "bg-orange-100 text-orange-800 border-orange-200",
@@ -90,9 +163,8 @@ const IssueCard = ({ issue, onClick }: IssueCardProps) => {
                 variant="ghost"
                 size="sm"
                 className="h-8 px-2 gap-1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
+                onClick={(e) => handleVote(1, e)}
+                disabled={voteMutation.isPending}
               >
                 <ArrowUp className="w-4 h-4" />
                 <span className="text-xs">{issue.upvotes}</span>
@@ -101,9 +173,8 @@ const IssueCard = ({ issue, onClick }: IssueCardProps) => {
                 variant="ghost"
                 size="sm"
                 className="h-8 px-2 gap-1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
+                onClick={(e) => handleVote(-1, e)}
+                disabled={voteMutation.isPending}
               >
                 <ArrowDown className="w-4 h-4" />
                 <span className="text-xs">{issue.downvotes}</span>

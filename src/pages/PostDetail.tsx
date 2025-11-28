@@ -13,6 +13,8 @@ import {
   CheckCircle,
   Loader2,
   RefreshCcw,
+  Edit,
+  MoreVertical,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -20,9 +22,26 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import StatusPill from "@/components/StatusPill";
 import CommentItem from "@/components/CommentItem";
+import { EditReportModal } from "@/components/EditReportModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   createComment,
   fetchReportDetail,
@@ -38,6 +57,8 @@ import {
 } from "@/lib/formatters";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCommentActions } from "@/hooks/useCommentActions";
+import { useReportActions } from "@/hooks/useReportActions";
 import { cn } from "@/lib/utils";
 
 const statusSteps = [
@@ -52,9 +73,25 @@ const PostDetail = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const [commentText, setCommentText] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  const commentActions = useCommentActions({
+    reportId: id!,
+    onSuccess: () => {
+      // Comments will be refetched automatically via query invalidation
+    },
+  });
+
+  const reportActions = useReportActions({
+    reportId: id!,
+    onSuccess: () => {
+      setShowEditModal(false);
+    },
+  });
 
   const {
     data: report,
@@ -151,9 +188,22 @@ const PostDetail = () => {
     return comments.map((comment) => (
       <div key={comment.id} className={cn({ "ml-4": depth > 0 })}>
         <CommentItem
+          id={comment.id}
           username={comment.author?.username || "Anonymous"}
           text={comment.text}
-          timestamp={formatRelativeTime(comment.created_at)}
+          timestamp={comment.created_at ? formatRelativeTime(comment.created_at) : "Recently"}
+          updatedAt={comment.updated_at ? formatRelativeTime(comment.updated_at) : undefined}
+          authorId={comment.author?.id}
+          currentUserId={user?.id}
+          onUserClick={
+            comment.author?.id
+              ? () => navigate(`/user/${comment.author!.id}`)
+              : undefined
+          }
+          onEdit={commentActions.editComment}
+          onDelete={commentActions.deleteComment}
+          isEditing={commentActions.isEditingComment}
+          isDeleting={commentActions.isDeletingComment}
         />
         {renderComments(comment.replies, depth + 1)}
       </div>
@@ -237,15 +287,40 @@ const PostDetail = () => {
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <Badge variant="outline">{categoryLabel}</Badge>
                   <StatusPill status={report.status} />
+                  {report.reporter?.id === user?.id && report.status === "pending" && (
+                    <div className="ml-auto">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="w-4 h-4" />
+                            <span className="sr-only">Report options</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setShowEditModal(true)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit Report
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
                 </div>
                 
                 <h1 className="text-2xl font-bold mb-3">{report.title}</h1>
                 
                 <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
-                  <span className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 hover:underline hover:text-primary"
+                    onClick={() =>
+                      report.reporter?.id && navigate(`/user/${report.reporter.id}`)
+                    }
+                    disabled={!report.reporter?.id}
+                  >
                     <User className="w-4 h-4" />
                     {reporterName}
-                  </span>
+                  </button>
                   <span className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
                     {postedAgo}
@@ -409,6 +484,18 @@ const PostDetail = () => {
           </div>
         </div>
       </main>
+
+      {report && (
+        <>
+          <EditReportModal
+            open={showEditModal}
+            onOpenChange={setShowEditModal}
+            report={report}
+            onSave={reportActions.updateReport}
+            isSaving={reportActions.isUpdating}
+          />
+        </>
+      )}
 
       <BottomNav />
     </div>

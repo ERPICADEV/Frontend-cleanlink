@@ -4,19 +4,25 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import PostRow from "@/components/PostRow";
 import CivicBadge from "@/components/CivicBadge";
+import CommentItem from "@/components/CommentItem";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { MapPin, Edit, Award, FileText, MessageSquare, TrendingUp, LogOut } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Edit, Award, FileText, MessageSquare, TrendingUp, LogOut, Link2, Copy, Check, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchReports, type ReportLocation } from "@/services/reportService";
-import { formatLocationName } from "@/lib/formatters";
+import { fetchReports, fetchUserComments, type ReportLocation, type UserComment } from "@/services/reportService";
+import { formatLocationName, formatRelativeTime } from "@/lib/formatters";
+import { useToast } from "@/hooks/use-toast";
 
 const Profile = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"posts" | "comments">("posts");
+  const [copied, setCopied] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const { toast } = useToast();
 
   const {
     data: reportData,
@@ -27,8 +33,18 @@ const Profile = () => {
     enabled: Boolean(user?.id),
   });
 
+  const {
+    data: commentsData,
+    isLoading: isLoadingComments,
+  } = useQuery({
+    queryKey: ["my-comments", user?.id],
+    queryFn: () => fetchUserComments({ limit: 50 }),
+    enabled: Boolean(user?.id),
+  });
+
   const reports = reportData?.data ?? [];
-  const commentsTotal = reports.reduce((acc, report) => acc + (report.comments_count ?? 0), 0);
+  const comments = commentsData?.data ?? [];
+  const commentsTotal = comments.length;
   const upvotesTotal = reports.reduce((acc, report) => acc + report.upvotes, 0);
 
   const regionLabel = useMemo(() => {
@@ -44,6 +60,27 @@ const Profile = () => {
       : levelInfo?.level && levelInfo.level >= 3
       ? "silver"
       : "bronze";
+
+  const profileUrl = user?.id ? `${window.location.origin}/user/${user.id}` : "";
+
+  const handleCopyProfileUrl = async () => {
+    if (!profileUrl) return;
+    try {
+      await navigator.clipboard.writeText(profileUrl);
+      setCopied(true);
+      toast({
+        title: "Profile URL copied!",
+        description: "Share your profile link with others.",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      toast({
+        title: "Failed to copy",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (!isAuthenticated) {
     return (
@@ -63,27 +100,67 @@ const Profile = () => {
           {/* Profile Header */}
           <Card className="p-6 mb-4 sm:rounded-lg border-x-0 sm:border-x">
             <div className="flex items-start gap-4">
-              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <span className="text-3xl font-bold text-primary">
+              <Avatar className="w-20 h-20 flex-shrink-0">
+                {user?.avatarUrl ? (
+                  <AvatarImage src={user.avatarUrl} alt={user?.username || "User"} />
+                ) : null}
+                <AvatarFallback className="text-3xl font-bold bg-primary/10 text-primary">
                   {(user?.username || "User").charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="flex-1">
-                <div className="flex flex-wrap gap-2 justify-between">
-                  <div>
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap gap-2 justify-between items-start mb-3">
+                  <div className="flex-1 min-w-0">
                     <h1 className="text-2xl font-bold mb-1">
                       {user?.username || "Anonymous Citizen"}
                     </h1>
-                    <p className="text-muted-foreground flex items-center gap-1 mb-3">
-                      <MapPin className="w-4 h-4" />
-                      {regionLabel}
+                    <p className="text-muted-foreground flex items-center gap-1 mb-2">
+                      <MapPin className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">{regionLabel}</span>
                     </p>
+                    {user?.badges && user.badges.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {user.badges.map((badge) => (
+                          <Badge key={badge} variant="outline" className="text-xs">
+                            {badge}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <Button variant="ghost" size="sm" onClick={logout} className="gap-2">
+                  <Button variant="ghost" size="sm" onClick={logout} className="gap-2 flex-shrink-0">
                     <LogOut className="w-4 h-4" />
                     Logout
                   </Button>
                 </div>
+                
+                {user?.bio && (
+                  <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap break-words">
+                    {user.bio}
+                  </p>
+                )}
+
+                {profileUrl && (
+                  <div className="flex items-center gap-2 mb-3 p-2 bg-accent/50 rounded-md border border-border">
+                    <Link2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-xs text-muted-foreground truncate flex-1 min-w-0">
+                      {profileUrl}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 flex-shrink-0"
+                      onClick={handleCopyProfileUrl}
+                    >
+                      {copied ? (
+                        <Check className="w-3.5 h-3.5 text-green-600" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </Button>
+                  </div>
+                )}
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -195,10 +272,66 @@ const Profile = () => {
               </>
             )}
             {activeTab === "comments" && (
-              <div className="p-8 text-center text-muted-foreground">
-                <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>Your comments will appear here</p>
-              </div>
+              <>
+                {isLoadingComments ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    Loading your comments…
+                  </div>
+                ) : comments.length > 0 ? (
+                  <div className="divide-y divide-border">
+                    {comments.map((comment: UserComment) => (
+                      <div key={comment.id} className="p-4 hover:bg-accent/30 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-sm font-medium text-foreground">
+                                {comment.author?.username || "Anonymous"}
+                              </span>
+                              <span className="text-xs text-muted-foreground">•</span>
+                              <span className="text-xs text-muted-foreground">
+                                {formatRelativeTime(comment.created_at)}
+                              </span>
+                              {comment.updated_at !== comment.created_at && (
+                                <>
+                                  <span className="text-xs text-muted-foreground">•</span>
+                                  <span className="text-xs text-muted-foreground italic">(edited)</span>
+                                </>
+                              )}
+                            </div>
+                            <p className="text-sm text-foreground mb-2 whitespace-pre-wrap break-words">
+                              {comment.text}
+                            </p>
+                            {comment.reportId && comment.reportTitle && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto p-0 text-xs text-muted-foreground hover:text-primary gap-1"
+                                onClick={() => navigate(`/post/${comment.reportId}`)}
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                View report: {comment.reportTitle}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 flex flex-col items-center justify-center text-center gap-3">
+                    <MessageSquare className="w-12 h-12 text-primary/60" />
+                    <div>
+                      <p className="text-base font-semibold text-foreground">No comments yet</p>
+                      <p className="text-sm text-muted-foreground">
+                        Your comments will appear here once you start sharing feedback on reports.
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => navigate("/")}>
+                      Explore reports
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

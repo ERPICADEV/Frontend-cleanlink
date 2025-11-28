@@ -17,6 +17,7 @@ import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Rewards from "./pages/Rewards";
 import NotFound from "./pages/NotFound";
+import PublicProfile from "./pages/PublicProfile";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Home />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/user/:userId" element={<PublicProfile />} />
           <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/create-post" element={<CreatePost />} />
           <Route path="/popular" element={<PopularProblems />} />

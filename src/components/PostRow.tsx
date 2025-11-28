@@ -3,6 +3,11 @@ import { cn } from "@/lib/utils";
 import { extractFirstImage, formatCategoryLabel, formatLocationName, formatRelativeTime } from "@/lib/formatters";
 import StatusPill from "@/components/StatusPill";
 import type { ReportSummary } from "@/services/reportService";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { voteOnReport } from "@/services/reportService";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface PostRowProps {
   post: ReportSummary;
@@ -22,6 +27,63 @@ const getCategoryTone = (category?: string) => {
 };
 
 const PostRow = ({ post, onClick }: PostRowProps) => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const voteMutation = useMutation({
+    mutationFn: (value: 1 | -1) => voteOnReport(post.id, value),
+    onMutate: async (value) => {
+      await queryClient.cancelQueries({ queryKey: ['reports'] });
+      
+      // Optimistic update only
+      queryClient.setQueryData(['reports'], (old: any) => {
+        if (!old?.pages) return old;
+        
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            data: page.data.map((report: any) =>
+              report.id === post.id
+                ? {
+                    ...report,
+                    upvotes: value === 1 ? report.upvotes + 1 : Math.max(0, report.upvotes),
+                    downvotes: value === -1 ? report.downvotes + 1 : Math.max(0, report.downvotes),
+                  }
+                : report
+            ),
+          })),
+        };
+      });
+    },
+    // REMOVE THIS: Don't refetch all reports after voting!
+    // onSettled: () => {
+    //   queryClient.invalidateQueries({ queryKey: ['reports'] });
+    // },
+    onError: (err, variables, context) => {
+      // Just refetch on error
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+    },
+  });
+
+  const handleVote = (value: 1 | -1, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      toast({
+        title: "Login required",
+        description: "Please login to vote on reports",
+        variant: "destructive",
+      });
+      navigate(`/login?redirect=/`);
+      return;
+    }
+    
+    voteMutation.mutate(value);
+  };
+
   const imageUrl = extractFirstImage(post.images);
   const categoryLabel = formatCategoryLabel(post.category);
   const timeAgo = post.createdAt ? formatRelativeTime(post.createdAt) : "Just now";
@@ -36,15 +98,25 @@ const PostRow = ({ post, onClick }: PostRowProps) => {
         {/* Upvote Column */}
         <div className="flex flex-col items-center gap-0.5 pt-1 w-10 flex-shrink-0">
           <button 
-            className="p-1.5 hover:bg-accent rounded transition-colors touch-manipulation"
+            className={cn(
+              "p-1.5 hover:bg-accent rounded transition-colors touch-manipulation",
+              voteMutation.isPending && "opacity-50 cursor-not-allowed"
+            )}
             aria-label="Upvote"
+            onClick={(e) => handleVote(1, e)}
+            disabled={voteMutation.isPending}
           >
             <ChevronUp className="w-5 h-5" />
           </button>
           <span className="text-sm font-semibold tabular-nums">{post.upvotes}</span>
           <button 
-            className="p-1.5 hover:bg-accent rounded transition-colors touch-manipulation"
+            className={cn(
+              "p-1.5 hover:bg-accent rounded transition-colors touch-manipulation",
+              voteMutation.isPending && "opacity-50 cursor-not-allowed"
+            )}
             aria-label="Downvote"
+            onClick={(e) => handleVote(-1, e)}
+            disabled={voteMutation.isPending}
           >
             <ChevronDown className="w-5 h-5" />
           </button>

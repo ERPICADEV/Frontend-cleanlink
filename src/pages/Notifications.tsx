@@ -2,52 +2,20 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Bell, MessageSquare, Award, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface Notification {
-  id: string;
-  type: "comment" | "status" | "reward" | "verification";
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-}
-
-const dummyNotifications: Notification[] = [
-  {
-    id: "1",
-    type: "comment",
-    title: "New comment on your post",
-    message: "Someone commented on 'Overflowing garbage bins near Park Street'",
-    time: "5 mins ago",
-    read: false,
-  },
-  {
-    id: "2",
-    type: "status",
-    title: "Issue status updated",
-    message: "Your report 'Large pothole causing traffic' is now In Process",
-    time: "1 hour ago",
-    read: false,
-  },
-  {
-    id: "3",
-    type: "reward",
-    title: "Points earned!",
-    message: "You earned +50 Civic Points for your resolved report",
-    time: "3 hours ago",
-    read: true,
-  },
-  {
-    id: "4",
-    type: "verification",
-    title: "Community verified your post",
-    message: "Your post has been verified by the community",
-    time: "5 hours ago",
-    read: true,
-  },
-];
+import { useNotifications } from "@/hooks/useNotifications";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatRelative } from "date-fns";
 
 const Notifications = () => {
+  const {
+    notifications,
+    loading,
+    error,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useNotifications();
+
   const getIcon = (type: string) => {
     switch (type) {
       case "comment":
@@ -78,51 +46,117 @@ const Notifications = () => {
     }
   };
 
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="divide-y divide-border">
+          {Array.from({ length: 5 }).map((_, idx) => (
+            <div key={idx} className="p-4 flex gap-3">
+              <Skeleton className="w-10 h-10 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="p-6 text-sm text-destructive">
+          Failed to load notifications. Please try again.
+        </div>
+      );
+    }
+
+    if (!notifications.length) {
+      return (
+        <div className="p-8 text-center text-muted-foreground text-sm">
+          You&apos;re all caught up. No notifications yet.
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <div className="divide-y divide-border">
+          {notifications.map((notification) => {
+            const createdAt = notification.createdAt
+              ? formatRelative(new Date(notification.createdAt), new Date())
+              : "";
+
+            const type =
+              notification.type === "report_resolved" ||
+              notification.type === "level_up" ||
+              notification.type === "points_earned"
+                ? notification.type
+                : "status";
+
+            return (
+              <div
+                key={notification.id}
+                className={cn(
+                  "p-4 hover:bg-accent/50 transition-colors cursor-pointer",
+                  !notification.isRead && "bg-accent/30"
+                )}
+              >
+                <div className="flex gap-3">
+                  <div
+                    className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
+                      getIconColor(type)
+                    )}
+                  >
+                    {getIcon(type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm mb-1">
+                      {notification.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-1 line-clamp-2">
+                      {notification.message}
+                    </p>
+                    {createdAt && (
+                      <span className="text-xs text-muted-foreground">
+                        {createdAt}
+                      </span>
+                    )}
+                  </div>
+                  {!notification.isRead && (
+                    <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-2" />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {hasNextPage && (
+          <button
+            className="w-full py-3 text-sm text-primary hover:underline disabled:opacity-50"
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage ? "Loading more..." : "Load more"}
+          </button>
+        )}
+      </>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
       <Header />
       
       <div className="container mx-auto px-0 sm:px-4 py-0 sm:py-4">
         <div className="max-w-3xl mx-auto">
-          <div className="bg-card sm:rounded-lg sm:border sm:border-border overflow-hidden">
+            <div className="bg-card sm:rounded-lg sm:border sm:border-border overflow-hidden">
             <div className="p-4 border-b border-border">
               <h1 className="text-xl font-bold">Notifications</h1>
             </div>
-            
-            <div className="divide-y divide-border">
-              {dummyNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={cn(
-                    "p-4 hover:bg-accent/50 transition-colors cursor-pointer",
-                    !notification.read && "bg-accent/30"
-                  )}
-                >
-                  <div className="flex gap-3">
-                    <div className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
-                      getIconColor(notification.type)
-                    )}>
-                      {getIcon(notification.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm mb-1">
-                        {notification.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-1 line-clamp-2">
-                        {notification.message}
-                      </p>
-                      <span className="text-xs text-muted-foreground">
-                        {notification.time}
-                      </span>
-                    </div>
-                    {!notification.read && (
-                      <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-2" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+              {renderContent()}
           </div>
         </div>
       </div>

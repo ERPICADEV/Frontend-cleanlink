@@ -9,40 +9,93 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useRegions } from "@/hooks/useRegions";
+import { Loader2 } from "lucide-react";
+import { formatLocationName } from "@/lib/formatters";
 
 const LocationSettings = () => {
-  const [state, setState] = useState("Delhi");
-  const [city, setCity] = useState("Central Delhi");
+  const { user, isAuthenticated } = useAuth();
+  const { updateRegion, isUpdatingRegion } = useUserProfile();
+  const { data: regionsData, isLoading: isLoadingRegions } = useRegions();
+  const { toast } = useToast();
+
+  // Initialize from user's current region
+  const currentRegion = user?.region;
+  const [country, setCountry] = useState("India");
+  const [state, setState] = useState(
+    (currentRegion as any)?.state || "Delhi"
+  );
+  const [city, setCity] = useState(
+    (currentRegion as any)?.city || ""
+  );
   const [showCityOnly, setShowCityOnly] = useState(false);
   const [showNearby, setShowNearby] = useState(true);
   const [showIndia, setShowIndia] = useState(true);
-  const { toast } = useToast();
 
-  const states = ["Delhi", "Maharashtra", "Karnataka", "Tamil Nadu", "Rajasthan"];
-  const cities: Record<string, string[]> = {
-    Delhi: ["Central Delhi", "North Delhi", "South Delhi", "East Delhi", "West Delhi"],
-    Maharashtra: ["Mumbai", "Pune", "Nagpur", "Nashik"],
-    Karnataka: ["Bangalore", "Mysore", "Mangalore"],
-    "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai"],
-    Rajasthan: ["Jaipur", "Jodhpur", "Udaipur"],
-  };
+  // Extract states and cities from regions data
+  const availableStates = useMemo(() => {
+    if (!regionsData?.countries) return [];
+    const india = regionsData.countries.find((c) => c.name === "India");
+    return india?.states || [];
+  }, [regionsData]);
 
-  const handleSave = () => {
-    toast({
-      title: "Settings saved",
-      description: "Your location preferences have been updated",
-    });
+  const availableCities = useMemo(() => {
+    const selectedState = availableStates.find((s) => s.name === state);
+    return selectedState?.cities || [];
+  }, [availableStates, state]);
+
+  // Update city when state changes
+  useEffect(() => {
+    if (availableCities.length > 0 && !availableCities.includes(city)) {
+      setCity(availableCities[0]);
+    }
+  }, [state, availableCities, city]);
+
+  const handleSave = async () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login required",
+        description: "Please login to update your region",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!city || !state) {
+      toast({
+        title: "Missing information",
+        description: "Please select both state and city",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await updateRegion({
+        region: {
+          country,
+          state,
+          city,
+        },
+      });
+    } catch (error) {
+      // Error handled by hook
+    }
   };
 
   const handleAutoDetect = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        () => {
+        (position) => {
+          // For now, just show a toast. In production, you'd reverse geocode
+          // the coordinates to get city/state
           toast({
             title: "Location detected",
-            description: "Your location has been automatically set",
+            description: "Please select your city and state manually",
           });
         },
         () => {
@@ -55,6 +108,10 @@ const LocationSettings = () => {
       );
     }
   };
+
+  const currentRegionLabel = currentRegion
+    ? formatLocationName(currentRegion)
+    : "Not set";
 
   return (
     <div className="min-h-screen bg-background">
@@ -69,38 +126,75 @@ const LocationSettings = () => {
         </div>
 
         <Card className="p-6 mb-4">
+          <div className="mb-4">
+            <h2 className="font-semibold mb-2">Current Location</h2>
+            <p className="text-sm text-muted-foreground">{currentRegionLabel}</p>
+          </div>
+
           <h2 className="font-semibold mb-4">Set Your Location</h2>
           
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">State</label>
-              <Select value={state} onValueChange={(val) => { setState(val); setCity(""); }}>
+              <Select
+                value={state}
+                onValueChange={(val) => {
+                  setState(val);
+                  setCity("");
+                }}
+                disabled={isLoadingRegions || isUpdatingRegion}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {states.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
+                  {isLoadingRegions ? (
+                    <SelectItem value="loading" disabled>
+                      Loading...
+                    </SelectItem>
+                  ) : (
+                    availableStates.map((s) => (
+                      <SelectItem key={s.name} value={s.name}>
+                        {s.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
             <div>
               <label className="text-sm font-medium mb-2 block">City</label>
-              <Select value={city} onValueChange={setCity}>
+              <Select
+                value={city}
+                onValueChange={setCity}
+                disabled={isLoadingRegions || isUpdatingRegion || !state}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select City" />
                 </SelectTrigger>
                 <SelectContent>
-                  {cities[state]?.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
+                  {availableCities.length === 0 ? (
+                    <SelectItem value="none" disabled>
+                      Select a state first
+                    </SelectItem>
+                  ) : (
+                    availableCities.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
-            <Button variant="outline" onClick={handleAutoDetect} className="w-full">
+            <Button
+              variant="outline"
+              onClick={handleAutoDetect}
+              className="w-full"
+              disabled={isUpdatingRegion}
+            >
               Auto-detect Location
             </Button>
           </div>
@@ -154,8 +248,19 @@ const LocationSettings = () => {
           </div>
         </Card>
 
-        <Button onClick={handleSave} className="w-full">
-          Save Preferences
+        <Button
+          onClick={handleSave}
+          className="w-full"
+          disabled={isUpdatingRegion || !city || !state}
+        >
+          {isUpdatingRegion ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Updating...
+            </>
+          ) : (
+            "Save Location"
+          )}
         </Button>
       </main>
     </div>
