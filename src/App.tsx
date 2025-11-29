@@ -1,4 +1,4 @@
-import { Toaster } from "@/components/ui/toaster";
+    import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -18,6 +18,11 @@ import Settings from "./pages/Settings";
 import Rewards from "./pages/Rewards";
 import NotFound from "./pages/NotFound";
 import PublicProfile from "./pages/PublicProfile";
+import AdminRoute from "./components/AdminRoute";
+import AdminDashboard from "./pages/admin/Dashboard";
+import ReportsManagement from "./pages/admin/ReportsManagement";
+import AuditLogsPage from "./pages/admin/AuditLogs";
+import AdminAnalytics from "./pages/admin/Analytics";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +47,39 @@ const App = () => (
           <Route path="/rewards" element={<Rewards />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/settings/location" element={<LocationSettings />} />
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <AdminRoute>
+                <ReportsManagement />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/audit/:reportId"
+            element={
+              <AdminRoute>
+                <AuditLogsPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/analytics"
+            element={
+              <AdminRoute>
+                <AdminAnalytics />
+              </AdminRoute>
+            }
+          />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

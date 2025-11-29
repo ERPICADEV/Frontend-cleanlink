@@ -19,6 +19,9 @@ interface AuthUser {
   badges?: string[];
   avatarUrl?: string | null;
   bio?: string | null;
+  role?: "user" | "admin" | "super_admin";
+  adminRegion?: string | null;
+  permissions?: string[];
   level_info?: {
     level: number;
     name: string;
