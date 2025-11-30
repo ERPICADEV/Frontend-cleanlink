@@ -1,9 +1,6 @@
 import { cn } from "@/lib/utils";
 
-const STATUS_META: Record<
-  string,
-  { label: string; classes: string }
-> = {
+const STATUS_META: Record<string, string> = {
   pending:
     "Pending|bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-200 dark:border-amber-500/30",
   community_verified:

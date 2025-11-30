@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ import {
 import { StatusBadge } from "../shared/StatusBadge";
 import { CategoryBadge } from "../shared/CategoryBadge";
 import type { Report, AdminUser } from "@/types/admin";
+import { useAdminUsers } from "@/hooks/useAdminUsers";
 
 interface AssignReportModalProps {
   open: boolean;
@@ -52,6 +52,8 @@ export function AssignReportModal({
 
   const maxNotes = 200;
 
+  const { admins, loading: adminsLoading } = useAdminUsers();
+
   const handleSubmit = async () => {
     if (!selectedAdmin) {
       setError("Please select an admin to assign");
@@ -82,15 +84,13 @@ export function AssignReportModal({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5" />
-            Assign Report
-          </DialogTitle>
-          <DialogDescription>
-            Assign this report to an admin for action.
-          </DialogDescription>
-        </DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <UserPlus className="w-5 h-5" />
+          Assign Report
+        </DialogTitle>
+        <DialogDescription>
+          Assign this report to an admin for action.
+        </DialogDescription>
 
         {/* Report Summary */}
         <div className="bg-muted/50 rounded-lg p-4 space-y-2">
@@ -118,18 +118,20 @@ export function AssignReportModal({
                 <SelectValue placeholder="Select an admin..." />
               </SelectTrigger>
               <SelectContent>
-                {mockAdmins.map((admin) => (
+                {(admins && admins.length > 0 ? admins : mockAdmins).map((admin) => (
                   <SelectItem
-                    key={admin.id}
-                    value={admin.id}
-                    disabled={admin.id === report.assignedTo}
+                    key={admin.id || admin.userId}
+                    value={admin.id || admin.userId}
+                    disabled={(admin.id || admin.userId) === report.assignedTo || adminsLoading}
                   >
                     <span className="flex items-center gap-2">
                       <span>{admin.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        ({admin.region})
-                      </span>
-                      {admin.id === report.assignedTo && (
+                      {admin.region && (
+                        <span className="text-xs text-muted-foreground">
+                          ({admin.region})
+                        </span>
+                      )}
+                      {(admin.id || admin.userId) === report.assignedTo && (
                         <span className="text-xs text-muted-foreground">
                           (Current)
                         </span>

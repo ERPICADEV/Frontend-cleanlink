@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -125,18 +124,16 @@ export function ResolveReportModal({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CheckCircle className="w-5 h-5" />
-            Resolve Report (Step {step}/2)
-          </DialogTitle>
-          <DialogDescription>
-            {step === 1 
-              ? "Select how this report should be resolved"
-              : "Provide details about the resolution"
-            }
-          </DialogDescription>
-        </DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <CheckCircle className="w-5 h-5" />
+          Resolve Report (Step {step}/2)
+        </DialogTitle>
+        <DialogDescription>
+          {step === 1 
+            ? "Select how this report should be resolved"
+            : "Provide details about the resolution"
+          }
+        </DialogDescription>
 
         {/* Progress Indicator */}
         <div className="flex items-center gap-2 mb-4">

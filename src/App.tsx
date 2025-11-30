@@ -23,6 +23,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import ReportsManagement from "./pages/admin/ReportsManagement";
 import AuditLogsPage from "./pages/admin/AuditLogs";
 import AdminAnalytics from "./pages/admin/Analytics";
+import AdminSettings from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
 
@@ -31,7 +32,12 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <Routes>
           <Route path="/landing" element={<Landing />} />
           <Route path="/onboarding" element={<Onboarding />} />
@@ -77,6 +83,14 @@ const App = () => (
             element={
               <AdminRoute>
                 <AdminAnalytics />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <AdminRoute>
+                <AdminSettings />
               </AdminRoute>
             }
           />

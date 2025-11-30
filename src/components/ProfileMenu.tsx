@@ -3,6 +3,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { User, Award, FileText, Settings, HelpCircle, LogOut } from "lucide-react";
@@ -42,6 +43,7 @@ const ProfileMenu = ({
       <SheetContent side="bottom" className="h-auto max-h-[80vh]">
         <SheetHeader>
           <SheetTitle className="sr-only">Profile Menu</SheetTitle>
+          <SheetDescription className="sr-only">User profile and navigation menu</SheetDescription>
         </SheetHeader>
         <div className="space-y-6 py-4">
           {/* Profile Overview */}

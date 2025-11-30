@@ -16,7 +16,7 @@ import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 import { Button } from "@/components/ui/button";
 import { fetchMapReports, type MapFeature } from "@/services/reportService";
-import { formatCategoryLabel, formatRelativeTime } from "@/lib/formatters";
+import { formatCategoryLabel, formatStatusLabel, formatRelativeTime } from "@/lib/formatters";
 
 const DEFAULT_CENTER: [number, number] = [28.6139, 77.209];
 
@@ -163,7 +163,7 @@ const MapExplorer = ({ category, onSelectReport }: MapExplorerProps) => {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {formatCategoryLabel(feature.properties.category)} •{" "}
-                      {formatCategoryLabel(feature.properties.status)}
+                      {formatStatusLabel(feature.properties.status)}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {formatRelativeTime(feature.properties.created_at)}

@@ -103,10 +103,38 @@ const mockAuditLogs: AuditLog[] = [
 export default function AuditLogsPage() {
   const { reportId } = useParams();
   
+  if (!reportId) {
+    return (
+      <AdminLayout
+        breadcrumbs={[
+          { label: "Dashboard", href: "/admin" },
+          { label: "Reports", href: "/admin/reports" },
+          { label: "Audit Log" },
+        ]}
+      >
+        <div className="space-y-6 max-w-4xl">
+          <Button variant="ghost" asChild className="-ml-2">
+            <Link to="/admin/reports">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Reports
+            </Link>
+          </Button>
+          <div className="bg-card rounded-xl border border-border p-6 text-center">
+            <p className="text-muted-foreground">No report ID provided. Please select a report to view its audit log.</p>
+            <Button asChild className="mt-4">
+              <Link to="/admin/reports">Go to Reports</Link>
+            </Button>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+  
   // Fetch report details
   const {
     data: reportData,
     isLoading: reportLoading,
+    isError: reportError,
   } = useQuery({
     queryKey: ["report", reportId],
     queryFn: () => fetchReportDetail(reportId!),
@@ -117,6 +145,7 @@ export default function AuditLogsPage() {
   const {
     data: auditLogs = [],
     isLoading: auditLoading,
+    isError: auditError,
   } = useAuditLogs(reportId);
 
   // Transform report data to match our type
@@ -216,7 +245,13 @@ export default function AuditLogsPage() {
         {/* Timeline */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Activity Timeline</h3>
-          {auditLoading ? (
+          {auditError ? (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-center">
+              <p className="text-destructive text-sm">
+                Failed to load audit logs. Please try again.
+              </p>
+            </div>
+          ) : auditLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 3 }).map((_, i) => (
                 <Skeleton key={i} className="h-20 w-full rounded" />
@@ -225,8 +260,9 @@ export default function AuditLogsPage() {
           ) : auditLogs.length > 0 ? (
             <AuditTimeline logs={auditLogs} />
           ) : (
-            <div className="text-center text-muted-foreground py-8">
-              No audit logs found for this report
+            <div className="text-center text-muted-foreground py-8 bg-muted/30 rounded-lg">
+              <p className="text-sm">No audit logs found for this report</p>
+              <p className="text-xs mt-1">Activity will appear here as actions are taken on this report</p>
             </div>
           )}
         </div>

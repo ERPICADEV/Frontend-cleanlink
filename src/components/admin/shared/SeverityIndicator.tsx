@@ -1,4 +1,3 @@
-import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -8,44 +7,37 @@ import {
 } from "@/components/ui/tooltip";
 
 interface SeverityIndicatorProps {
-  severity: number;
+  severity?: number;
   confidence?: number;
   className?: string;
 }
 
 export function SeverityIndicator({ severity, confidence, className }: SeverityIndicatorProps) {
-  const stars = Math.round(severity);
+  // Calculate severity percentage (severity is 1-5, convert to 0-100%)
+  const severityPercent = severity ? Math.round((severity / 5) * 100) : 0;
   
-  const getStarColor = (index: number) => {
-    if (index >= stars) return "text-gray-200";
-    if (stars >= 5) return "text-severity-5";
-    if (stars >= 4) return "text-severity-4";
-    if (stars >= 3) return "text-severity-3";
-    if (stars >= 2) return "text-severity-2";
-    return "text-severity-1";
+  const getSeverityColor = () => {
+    if (!severity) return "text-muted-foreground";
+    if (severity >= 4.5) return "text-destructive font-semibold";
+    if (severity >= 3.5) return "text-orange-500 font-semibold";
+    if (severity >= 2.5) return "text-yellow-500";
+    return "text-muted-foreground";
   };
 
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className={cn("flex items-center gap-0.5", className)}>
-            {[1, 2, 3, 4, 5].map((index) => (
-              <Star
-                key={index}
-                className={cn(
-                  "w-4 h-4 transition-colors",
-                  getStarColor(index),
-                  index <= stars && "fill-current"
-                )}
-              />
-            ))}
+          <div className={cn("flex items-center", className)}>
+            <span className={cn("text-sm font-medium", getSeverityColor())}>
+              {severity ? `${severityPercent}%` : "N/A"}
+            </span>
           </div>
         </TooltipTrigger>
         <TooltipContent>
           <p className="text-sm">
-            Severity: {severity}/5
-            {confidence && ` (${Math.round(confidence * 100)}% confidence)`}
+            Severity: {severity ? `${severity}/5 (${severityPercent}%)` : "Not available"}
+            {confidence && ` • Confidence: ${Math.round(confidence * 100)}%`}
           </p>
         </TooltipContent>
       </Tooltip>

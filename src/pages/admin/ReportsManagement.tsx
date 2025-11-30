@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -151,6 +151,7 @@ export default function ReportsManagement() {
   const handleFiltersChange = (newFilters: ReportsFilter) => {
     setFilters(newFilters);
     setHookFilters(newFilters);
+    setPage(1); // Reset to first page when filters change
   };
 
   // Filter reports (client-side for search, server handles status/category/region)
@@ -166,6 +167,12 @@ export default function ReportsManagement() {
     }
     return filtered;
   }, [reports, filters.search]);
+
+  // Clear selections when filtered reports change (to avoid invalid selections)
+  useEffect(() => {
+    const validIds = new Set(filteredReports.map((r) => r.id));
+    setSelectedIds((prev) => prev.filter((id) => validIds.has(id)));
+  }, [filteredReports]);
 
   const totalReports = filteredReports.length;
   const totalPages = Math.ceil(totalReports / pageSize);
@@ -231,6 +238,7 @@ export default function ReportsManagement() {
           onReset={() => {
             setFilters(defaultFilters);
             setHookFilters(defaultFilters);
+            setPage(1); // Reset to first page when filters reset
           }}
         />
 
@@ -241,38 +249,41 @@ export default function ReportsManagement() {
             <span className="font-medium text-foreground">{totalReports}</span> reports
           </p>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             {/* Select All */}
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <label className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
               <Checkbox
-                checked={selectedIds.length === filteredReports.length && filteredReports.length > 0}
+                checked={selectedIds.length === paginatedReports.length && paginatedReports.length > 0}
                 onCheckedChange={(checked) => {
                   if (checked) {
-                    setSelectedIds(filteredReports.map((r) => r.id));
+                    setSelectedIds(paginatedReports.map((r) => r.id));
                   } else {
                     setSelectedIds([]);
                   }
                 }}
               />
-              Select All
+              <span className="hidden sm:inline">Select All</span>
+              <span className="sm:hidden">Select</span>
             </label>
 
             {/* Bulk Actions */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" disabled={selectedIds.length === 0}>
-                  Bulk Actions
-                  <ChevronDown className="w-4 h-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>Assign All Selected</DropdownMenuItem>
-                <DropdownMenuItem>Resolve All Selected</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">
-                  Mark as Spam
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {selectedIds.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                    Bulk Actions ({selectedIds.length})
+                    <ChevronDown className="w-4 h-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem disabled>Assign All Selected</DropdownMenuItem>
+                  <DropdownMenuItem disabled>Resolve All Selected</DropdownMenuItem>
+                  <DropdownMenuItem className="text-destructive" disabled>
+                    Mark as Spam
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
 
@@ -296,9 +307,9 @@ export default function ReportsManagement() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Show</span>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground hidden sm:inline">Show</span>
               <Select
                 value={String(pageSize)}
                 onValueChange={(value) => {
@@ -315,7 +326,7 @@ export default function ReportsManagement() {
                   <SelectItem value="50">50</SelectItem>
                 </SelectContent>
               </Select>
-              <span className="text-sm text-muted-foreground">rows per page</span>
+              <span className="text-muted-foreground hidden sm:inline">per page</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -324,12 +335,13 @@ export default function ReportsManagement() {
                 size="sm"
                 onClick={() => setPage(page - 1)}
                 disabled={page === 1}
+                className="flex-1 sm:flex-initial"
               >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Previous
+                <ChevronLeft className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Previous</span>
               </Button>
 
-              <div className="flex items-center gap-1">
+              <div className="hidden sm:flex items-center gap-1">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   const pageNum = i + 1;
                   return (
@@ -358,15 +370,21 @@ export default function ReportsManagement() {
                   </>
                 )}
               </div>
+              
+              {/* Mobile page indicator */}
+              <div className="sm:hidden text-sm text-muted-foreground px-2">
+                Page {page} of {totalPages}
+              </div>
 
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setPage(page + 1)}
                 disabled={page === totalPages}
+                className="flex-1 sm:flex-initial"
               >
-                Next
-                <ChevronRight className="w-4 h-4 ml-1" />
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="w-4 h-4 sm:ml-1" />
               </Button>
             </div>
           </div>

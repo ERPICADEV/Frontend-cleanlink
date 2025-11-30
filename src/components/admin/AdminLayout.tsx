@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminHeader } from "./AdminHeaders";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { VisuallyHidden } from "@/components/ui/visually-hidden";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 
@@ -25,6 +26,10 @@ export function AdminLayout({ children, breadcrumbs }: AdminLayoutProps) {
       {/* Mobile Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="p-0 w-64">
+          <VisuallyHidden>
+            <SheetTitle>Navigation Menu</SheetTitle>
+            <SheetDescription>Admin panel navigation menu</SheetDescription>
+          </VisuallyHidden>
           <AdminSidebar />
         </SheetContent>
       </Sheet>

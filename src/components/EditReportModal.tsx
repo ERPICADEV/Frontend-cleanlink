@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -118,12 +117,10 @@ export const EditReportModal = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Report</DialogTitle>
-          <DialogDescription>
-            Update your report details. Only pending reports can be edited.
-          </DialogDescription>
-        </DialogHeader>
+        <DialogTitle>Edit Report</DialogTitle>
+        <DialogDescription>
+          Update your report details. Only pending reports can be edited.
+        </DialogDescription>
 
         {!canEdit && (
           <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">

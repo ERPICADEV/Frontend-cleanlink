@@ -1,17 +1,11 @@
-import { FileText, UserCheck, CheckCircle2, Clock } from "lucide-react";
+import { FileText, UserCheck, CheckCircle2, Clock, Loader2 } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { StatCard } from "@/components/admin/dashboard/StatCard";
-import type { DashboardStats } from "@/types/admin";
-
-// Mock stats data
-const mockStats: DashboardStats = {
-  pendingReports: 24,
-  assignedToYou: 8,
-  resolvedThisMonth: 156,
-  avgResolutionTime: "2.4 days",
-};
+import { useAdminStats } from "@/hooks/useAdminStats";
 
 export default function AdminDashboard() {
+  const { stats, loading, error } = useAdminStats();
+
   return (
     <AdminLayout breadcrumbs={[{ label: "Dashboard" }]}>
       <div className="space-y-6">
@@ -24,94 +18,142 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title="Pending Reports"
-            value={mockStats.pendingReports}
-            icon={FileText}
-            iconColor="text-blue-600"
-            iconBgColor="bg-blue-100"
-            trend={{ value: 12, isPositive: false }}
-          />
-          <StatCard
-            title="Assigned to You"
-            value={mockStats.assignedToYou}
-            icon={UserCheck}
-            iconColor="text-green-600"
-            iconBgColor="bg-green-100"
-          />
-          <StatCard
-            title="Resolved This Month"
-            value={mockStats.resolvedThisMonth}
-            icon={CheckCircle2}
-            iconColor="text-purple-600"
-            iconBgColor="bg-purple-100"
-            trend={{ value: 8, isPositive: true }}
-          />
-          <StatCard
-            title="Avg Resolution Time"
-            value={mockStats.avgResolutionTime}
-            icon={Clock}
-            iconColor="text-orange-600"
-            iconBgColor="bg-orange-100"
-          />
-        </div>
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="bg-card rounded-xl border border-border p-6 flex items-center justify-center"
+              >
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+            <p className="text-destructive text-sm">
+              Failed to load stats: {error}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              title="Pending Reports"
+              value={stats?.pendingReports ?? 0}
+              icon={FileText}
+              iconColor="text-blue-600"
+              iconBgColor="bg-blue-100"
+            />
+            <StatCard
+              title="Assigned to You"
+              value={stats?.assignedToYou ?? 0}
+              icon={UserCheck}
+              iconColor="text-green-600"
+              iconBgColor="bg-green-100"
+            />
+            <StatCard
+              title="Resolved This Month"
+              value={stats?.resolvedThisMonth ?? 0}
+              icon={CheckCircle2}
+              iconColor="text-purple-600"
+              iconBgColor="bg-purple-100"
+            />
+            <StatCard
+              title="Avg Resolution Time"
+              value={stats?.avgResolutionTime ?? "0 hrs"}
+              icon={Clock}
+              iconColor="text-orange-600"
+              iconBgColor="bg-orange-100"
+            />
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Activity */}
           <div className="bg-card rounded-xl border border-border p-6">
             <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
-            <div className="space-y-4">
-              {[
-                { action: "Report assigned", target: "RPT-a1b2c3", time: "2 min ago" },
-                { action: "Report resolved", target: "RPT-d4e5f6", time: "15 min ago" },
-                { action: "New report flagged", target: "RPT-g7h8i9", time: "1 hour ago" },
-                { action: "Comment added", target: "RPT-j0k1l2", time: "2 hours ago" },
-              ].map((activity, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between py-2 border-b border-border last:border-0"
-                >
-                  <div>
-                    <p className="text-sm font-medium">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground font-mono">
-                      {activity.target}
-                    </p>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : stats?.recentActivity && stats.recentActivity.length > 0 ? (
+              <div className="space-y-4">
+                {stats.recentActivity.map((activity: any, i: number) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between py-2 border-b border-border last:border-0"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">
+                        {activity.title || `Report ${activity.status}`}
+                      </p>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {activity.id?.slice(0, 12)}...
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {activity.updatedAt
+                        ? new Date(activity.updatedAt).toLocaleDateString()
+                        : "Recently"}
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {activity.time}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground py-4">
+                No recent activity
+              </p>
+            )}
           </div>
 
           {/* Reports by Category */}
           <div className="bg-card rounded-xl border border-border p-6">
             <h2 className="text-lg font-semibold mb-4">Reports by Category</h2>
-            <div className="space-y-3">
-              {[
-                { category: "Pothole", count: 45, color: "bg-red-500" },
-                { category: "Garbage", count: 32, color: "bg-green-500" },
-                { category: "Flooding", count: 18, color: "bg-blue-500" },
-                { category: "Street Maintenance", count: 24, color: "bg-purple-500" },
-                { category: "Traffic", count: 15, color: "bg-orange-500" },
-              ].map((item) => (
-                <div key={item.category} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>{item.category}</span>
-                    <span className="font-medium">{item.count}</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${item.color} rounded-full transition-all`}
-                      style={{ width: `${(item.count / 50) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : stats?.reportsByCategory && stats.reportsByCategory.length > 0 ? (
+              <div className="space-y-3">
+                {stats.reportsByCategory.map((item: any, i: number) => {
+                  const maxCount = Math.max(
+                    ...stats.reportsByCategory.map((c: any) => c.count)
+                  );
+                  const colors = [
+                    "bg-red-500",
+                    "bg-green-500",
+                    "bg-blue-500",
+                    "bg-purple-500",
+                    "bg-orange-500",
+                  ];
+                  return (
+                    <div key={item.category || i} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="capitalize">
+                          {item.category?.replace(/_/g, " ") || "Other"}
+                        </span>
+                        <span className="font-medium">{item.count}</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${
+                            colors[i % colors.length]
+                          } rounded-full transition-all`}
+                          style={{
+                            width: `${(item.count / maxCount) * 100}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground py-4">
+                No category data available
+              </p>
+            )}
           </div>
         </div>
       </div>

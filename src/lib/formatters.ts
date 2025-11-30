@@ -44,6 +44,14 @@ export const formatCategoryLabel = (category?: string) => {
     .join(" ");
 };
 
+export const formatStatusLabel = (status?: string) => {
+  if (!status) return "Pending";
+  return status
+    .split(/[_-]+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
 export const formatLocationName = (location?: ReportLocation | null) => {
   if (!location) return "Unknown location";
   if (location.area_name) return location.area_name;

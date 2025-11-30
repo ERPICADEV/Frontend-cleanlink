@@ -5,7 +5,8 @@ import {
   ScrollText, 
   BarChart3, 
   ArrowLeft,
-  Shield
+  Shield,
+  Settings as SettingsIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,8 +17,9 @@ interface AdminSidebarProps {
 const navItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard, end: true },
   { title: "Reports", url: "/admin/reports", icon: FileText },
-  { title: "Audit Logs", url: "/admin/audit", icon: ScrollText, disabled: true }, // Disabled until we have a list view
+  // Audit Logs are accessed via individual report pages, not a list view
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
+  { title: "Settings", url: "/admin/settings", icon: SettingsIcon },
 ];
 
 export function AdminSidebar({ collapsed = false }: AdminSidebarProps) {

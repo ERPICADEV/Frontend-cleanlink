@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ExternalLink, UserPlus, CheckCircle, ScrollText, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -90,13 +91,13 @@ export function ReportsTable({
           <div className="col-span-2 text-right">Actions</div>
         </div>
 
-        {/* Table Body */}
-        <div className="divide-y divide-border">
+        {/* Table Body - Desktop View */}
+        <div className="hidden lg:block divide-y divide-border">
           {reports.map((report) => (
             <div
               key={report.id}
               className={cn(
-                "grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-4 px-4 py-4 table-row-hover",
+                "grid grid-cols-12 gap-4 px-4 py-4 table-row-hover",
                 selectedIds.includes(report.id) && "bg-primary/5"
               )}
             >
@@ -109,15 +110,15 @@ export function ReportsTable({
               </div>
 
               {/* ID */}
-              <div className="col-span-1 flex items-center">
+              <div className="col-span-1 flex items-center min-w-0">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <a
-                      href={`/reports/${report.id}`}
+                    <Link
+                      to={`/post/${report.id}`}
                       className="font-mono text-sm text-primary hover:underline truncate"
                     >
                       {report.id.slice(0, 8)}...
-                    </a>
+                    </Link>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p className="font-mono">{report.id}</p>
@@ -126,7 +127,7 @@ export function ReportsTable({
               </div>
 
               {/* Title */}
-              <div className="col-span-2 flex items-center">
+              <div className="col-span-2 flex items-center min-w-0">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="font-medium truncate">{report.title}</span>
@@ -156,13 +157,15 @@ export function ReportsTable({
               </div>
 
               {/* Assigned To */}
-              <div className="col-span-2 flex items-center text-sm">
+              <div className="col-span-2 flex items-center text-sm min-w-0">
                 {report.assignedToName ? (
-                  <span className="flex items-center gap-1.5">
-                    <span className="font-medium">{report.assignedToName}</span>
-                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                      {report.region}
-                    </span>
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className="font-medium truncate">{report.assignedToName}</span>
+                    {report.region && (
+                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
+                        {report.region}
+                      </span>
+                    )}
                   </span>
                 ) : (
                   <span className="text-muted-foreground">Unassigned</span>
@@ -173,7 +176,7 @@ export function ReportsTable({
               <div className="col-span-1 flex items-center">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">
                       {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
                     </span>
                   </TooltipTrigger>
@@ -215,7 +218,7 @@ export function ReportsTable({
                   </Button>
                 </div>
 
-                {/* Mobile/Tablet Actions Dropdown */}
+                {/* Tablet Actions Dropdown */}
                 <div className="xl:hidden">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -224,11 +227,11 @@ export function ReportsTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onAssign(report)}>
+                      <DropdownMenuItem onClick={() => onAssign(report)} disabled={report.status === "resolved"}>
                         <UserPlus className="w-4 h-4 mr-2" />
                         Assign Report
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onResolve(report)}>
+                      <DropdownMenuItem onClick={() => onResolve(report)} disabled={report.status === "resolved"}>
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Resolve Report
                       </DropdownMenuItem>
@@ -236,12 +239,118 @@ export function ReportsTable({
                         <ScrollText className="w-4 h-4 mr-2" />
                         View Audit Log
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        View Details
+                      <DropdownMenuItem asChild>
+                        <Link to={`/post/${report.id}`}>
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          View Details
+                        </Link>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden divide-y divide-border">
+          {reports.map((report) => (
+            <div
+              key={report.id}
+              className={cn(
+                "p-4 space-y-3",
+                selectedIds.includes(report.id) && "bg-primary/5"
+              )}
+            >
+              {/* Header Row */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <Checkbox
+                    checked={selectedIds.includes(report.id)}
+                    onCheckedChange={() => toggleOne(report.id)}
+                    className="shrink-0"
+                  />
+                  <Link
+                    to={`/post/${report.id}`}
+                    className="font-mono text-xs text-primary hover:underline truncate"
+                  >
+                    {report.id.slice(0, 12)}...
+                  </Link>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="shrink-0">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onAssign(report)} disabled={report.status === "resolved"}>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Assign
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onResolve(report)} disabled={report.status === "resolved"}>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Resolve
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onViewAudit(report.id)}>
+                      <ScrollText className="w-4 h-4 mr-2" />
+                      Audit Log
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to={`/post/${report.id}`}>
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        View Details
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Title */}
+              <div>
+                <h3 className="font-semibold text-sm leading-tight line-clamp-2">{report.title}</h3>
+              </div>
+
+              {/* Badges Row */}
+              <div className="flex flex-wrap items-center gap-2">
+                <CategoryBadge category={report.category} />
+                <StatusBadge status={report.status} />
+                {report.region && (
+                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                    {report.region}
+                  </span>
+                )}
+              </div>
+
+              {/* Meta Row */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center gap-3">
+                    <SeverityIndicator
+                      severity={report.severity}
+                      confidence={report.aiScore?.legit}
+                    />
+                    <span className="whitespace-nowrap">
+                      {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
+                    </span>
+                  </div>
+                  {report.assignedToName ? (
+                    <span className="font-medium text-foreground truncate max-w-[120px]">
+                      {report.assignedToName}
+                    </span>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs shrink-0"
+                      onClick={() => onAssign(report)}
+                      disabled={report.status === "resolved"}
+                    >
+                      <UserPlus className="w-3 h-3 mr-1" />
+                      Assign
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
