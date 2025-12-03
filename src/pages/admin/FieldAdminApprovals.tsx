@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle, XCircle, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { usePendingApprovals } from "@/hooks/usePendingApprovals";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 
 export default function FieldAdminApprovals() {
   const {
@@ -35,7 +36,13 @@ export default function FieldAdminApprovals() {
   const pendingApprovals = approvals;
 
   return (
-    <div className="space-y-6">
+    <AdminLayout
+      breadcrumbs={[
+        { label: "Dashboard", href: "/admin" },
+        { label: "Pending Approvals" },
+      ]}
+    >
+      <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Pending Approvals</h1>
         <p className="text-muted-foreground">
@@ -169,6 +176,6 @@ export default function FieldAdminApprovals() {
           ))}
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 }

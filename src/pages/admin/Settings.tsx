@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -111,7 +112,13 @@ export default function AdminSettings() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <AdminLayout
+      breadcrumbs={[
+        { label: "Dashboard", href: "/admin" },
+        { label: "Settings" },
+      ]}
+    >
+      <div className="space-y-6 max-w-4xl">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Admin Settings</h1>
@@ -316,7 +323,8 @@ export default function AdminSettings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }
 

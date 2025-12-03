@@ -79,6 +79,8 @@ export interface ReportDetail extends ReportSummary {
   duplicateOf?: string | null;
   mcdResolution?: Record<string, unknown>;
   mcdVerifiedBy?: string | null;
+  resolutionPhotos?: string[];
+  resolutionDetails?: string | null;
 }
 
 export interface ReportListResponse {

@@ -243,6 +243,7 @@ const PostDetail = () => {
   const commentsCount = report.comments?.length ?? 0;
   const legitScore = report.aiScore?.legit ?? 0.5;
   const severityScore = report.aiScore?.severity ?? 0.5;
+  const resolutionPhotos = report.resolutionPhotos || [];
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
@@ -385,13 +386,36 @@ const PostDetail = () => {
             </div>
           )}
 
-          {/* Image */}
+          {/* Original Image */}
           {imageUrl && (
             <img
               src={imageUrl}
               alt={report.title}
               className="w-full max-h-[500px] object-cover"
             />
+          )}
+
+          {/* Resolution Photos (if any) */}
+          {resolutionPhotos.length > 0 && (
+            <div className="p-4 border-b border-border">
+              <h3 className="font-semibold mb-3">Resolved photos</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {resolutionPhotos.map((photo, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className="relative aspect-video overflow-hidden rounded-md border bg-muted"
+                    onClick={() => window.open(photo, "_blank")}
+                  >
+                    <img
+                      src={photo}
+                      alt={`Resolved photo ${index + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* Description */}

@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import {
@@ -215,7 +216,13 @@ export default function ReportsManagement() {
   };
 
   return (
-    <div className="space-y-6">
+    <AdminLayout
+      breadcrumbs={[
+        { label: "Dashboard", href: "/admin" },
+        { label: "Reports" },
+      ]}
+    >
+      <div className="space-y-6">
         {/* Page Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Reports Management</h1>
@@ -382,21 +389,22 @@ export default function ReportsManagement() {
             </div>
           </div>
         )}
-      {/* Modals */}
-      <AssignReportModal
-        open={assignModalOpen}
-        onOpenChange={setAssignModalOpen}
-        report={selectedReport}
-        onAssign={handleAssignSubmit}
-        isLoading={isAssigning}
-      />
-      <ResolveReportModal
-        open={resolveModalOpen}
-        onOpenChange={setResolveModalOpen}
-        report={selectedReport}
-        onResolve={handleResolveSubmit}
-        isLoading={isResolving}
-      />
-    </div>
+        {/* Modals */}
+        <AssignReportModal
+          open={assignModalOpen}
+          onOpenChange={setAssignModalOpen}
+          report={selectedReport}
+          onAssign={handleAssignSubmit}
+          isLoading={isAssigning}
+        />
+        <ResolveReportModal
+          open={resolveModalOpen}
+          onOpenChange={setResolveModalOpen}
+          report={selectedReport}
+          onResolve={handleResolveSubmit}
+          isLoading={isResolving}
+        />
+      </div>
+    </AdminLayout>
   );
 }
