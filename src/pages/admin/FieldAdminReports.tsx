@@ -170,10 +170,7 @@ export default function FieldAdminReports() {
             Reports assigned to you for resolution
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          New Report
-        </Button>
+       
       </div>
 
       {/* Filters */}
