@@ -16,7 +16,6 @@ interface FieldAdminSidebarProps {
 const fieldAdminNavItems = [
   { title: "Dashboard", url: "/field-admin", icon: LayoutDashboard, end: true },
   { title: "My Reports", url: "/field-admin/reports", icon: FileText },
-  { title: "Pending Approvals", url: "/field-admin/approvals", icon: CheckSquare },
 ];
 
 export function FieldAdminSidebar({ collapsed = false }: FieldAdminSidebarProps) {

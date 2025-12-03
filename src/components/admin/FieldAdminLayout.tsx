@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { FieldAdminSidebar } from "./FieldAdminSidebar";
 import { AdminHeader } from "./AdminHeaders";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { VisuallyHidden } from "@/components/ui/visually-hidden";
 
 interface FieldAdminLayoutProps {
   children: React.ReactNode;
@@ -24,6 +25,10 @@ export function FieldAdminLayout({ children, breadcrumbs }: FieldAdminLayoutProp
       {/* Mobile Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="p-0 w-64">
+          <VisuallyHidden>
+            <SheetTitle>Navigation Menu</SheetTitle>
+            <SheetDescription>Field admin navigation menu</SheetDescription>
+          </VisuallyHidden>
           <FieldAdminSidebar />
         </SheetContent>
       </Sheet>

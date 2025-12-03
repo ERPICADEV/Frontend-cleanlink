@@ -49,6 +49,22 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+const normalizeAdminRole = (role?: string | null): AuthUser["role"] => {
+  if (!role) return "user";
+  const normalized = role.toLowerCase();
+
+  // Treat generic "admin" as super admin to ensure they get full access
+  if (["super_admin", "superadmin", "super-admin", "admin"].includes(normalized)) {
+    return "super_admin";
+  }
+
+  if (["field_admin", "fieldadmin", "normal_admin", "normal-admin"].includes(normalized)) {
+    return "field_admin";
+  }
+
+  return "user";
+};
+
 const ACCESS_TOKEN_KEY = "cleanlink_token";
 const REFRESH_TOKEN_KEY = "cleanlink_refresh_token";
 
@@ -104,7 +120,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const handleAuthResponse = useCallback(
     (data: { user: AuthUser; token: string; refresh_token: string }) => {
       persistSession(data.token, data.refresh_token);
-      setUser(data.user);
+      const normalizedUser: AuthUser = {
+        ...data.user,
+        role: normalizeAdminRole(data.user.role),
+      };
+      setUser(normalizedUser);
     },
     [persistSession]
   );
@@ -113,8 +133,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!token) return null;
     try {
       const { data } = await apiClient.get<AuthUser>("/users/me");
-      setUser(data);
-      return data;
+      const normalizedUser: AuthUser = {
+        ...data,
+        role: normalizeAdminRole(data.role),
+      };
+      setUser(normalizedUser);
+      return normalizedUser;
     } catch (error) {
       console.error("Failed to fetch user profile", error);
       return null;

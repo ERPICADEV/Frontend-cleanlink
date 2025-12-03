@@ -200,7 +200,7 @@ export default function AdminAnalytics() {
             {loading ? (
               <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-8 bg-muted animate-pulse rounded" />
+                  <div key={i} className="h-8 bgcolor-muted animate-pulse rounded" />
                 ))}
               </div>
             ) : topReporters.length > 0 ? (

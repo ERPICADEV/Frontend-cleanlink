@@ -4,6 +4,7 @@ import {
   FileText, 
   ScrollText, 
   BarChart3, 
+  CheckSquare,
   ArrowLeft,
   Shield,
   Settings as SettingsIcon
@@ -26,6 +27,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard, end: true },
   { title: "Reports", url: "/admin/reports", icon: FileText },
+  { title: "Pending Approvals", url: "/admin/approvals", icon: CheckSquare },
   // Example disabled item:
   // { title: "Audit Logs", url: "/admin/logs", icon: ScrollText, disabled: true },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },

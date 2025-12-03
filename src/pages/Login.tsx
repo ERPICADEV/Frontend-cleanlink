@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
-  const { login, signup } = useAuth();
+  const { login, signup, user } = useAuth();
   const { toast } = useToast();
 
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -20,6 +20,23 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+
+  // Handle role-based redirect after successful login
+  useEffect(() => {
+    if (shouldRedirect && user) {
+      if (user.role === 'super_admin') {
+        navigate('/admin/dashboard');
+      } else if (user.role === 'field_admin') {
+        navigate('/field-admin/dashboard');
+      } else if (redirectTo && redirectTo !== '/') {
+        navigate(redirectTo);
+      } else {
+        navigate('/');
+      }
+      setShouldRedirect(false);
+    }
+  }, [user, shouldRedirect, navigate, redirectTo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +49,9 @@ const Login = () => {
         await signup({ email, password, username });
         toast({ title: "Account created", description: "You're all set!" });
       }
-      navigate(redirectTo);
+      
+      // Trigger redirect check after user state updates
+      setShouldRedirect(true);
     } catch (error) {
       let message = "Something went wrong. Please try again.";
       if (isAxiosError(error)) {

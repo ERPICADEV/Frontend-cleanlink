@@ -55,13 +55,12 @@ const App = () => (
           <Route path="/rewards" element={<Rewards />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/settings/location" element={<LocationSettings />} />
+          
           {/* Admin Routes */}
-          // Update the admin routes section in App.tsx:
-       {/* Admin Routes */}
-       <Route
+          <Route
             path="/admin/*"
             element={
-              <AdminRoute>
+              <AdminRoute allowedRoles={['super_admin']}>
                 <AdminRoutes />
               </AdminRoute>
             }
@@ -70,12 +69,14 @@ const App = () => (
           <Route
             path="/field-admin/*"
             element={
-              <AdminRoute>
+              <AdminRoute allowedRoles={['field_admin']}>
                 <FieldAdminRoutes />
               </AdminRoute>
             }
           />
           
+          <Route path="/404" element={<NotFound />} />
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

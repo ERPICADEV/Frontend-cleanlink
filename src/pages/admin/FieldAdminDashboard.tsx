@@ -6,17 +6,56 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, AlertCircle, CheckCircle, Clock, FileText, Users } from 'lucide-react';
-import { useAdminStats } from '@/hooks/useAdminStats';
 import { useAssignedReports } from '@/hooks/useAssignedReports';
 import { formatDistanceToNow } from 'date-fns';
 
+
+const getRelativeTime = (timestamp?: string) => {
+  if (!timestamp) return "Recently";
+  const parsed = new Date(timestamp);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Recently";
+  }
+  return formatDistanceToNow(parsed, { addSuffix: true });
+};
 
 export default function FieldAdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'reports'>('overview');
   
-  const { data: stats, isLoading: isLoadingStats } = useAdminStats();
   const { reports, isLoading: isLoadingReports } = useAssignedReports();
+
+  const assignedCount = reports?.length ?? 0;
+  const pendingTasksCount = reports?.filter(r => ['assigned', 'in_progress'].includes(r.status)).length ?? 0;
+
+  const now = new Date();
+  const resolvedThisMonthCount = reports?.filter(r => {
+    if (r.status !== 'resolved' || !r.updatedAt) return false;
+    const updated = new Date(r.updatedAt);
+    if (Number.isNaN(updated.getTime())) return false;
+    const diffDays = (now.getTime() - updated.getTime()) / (1000 * 60 * 60 * 24);
+    return diffDays <= 30;
+  }).length ?? 0;
+
+  const avgResolutionTime = useMemo(() => {
+    const resolved = reports?.filter(r => r.status === 'resolved' && r.createdAt && r.updatedAt) ?? [];
+    if (!resolved.length) return "N/A";
+
+    const durations = resolved
+      .map(r => {
+        const created = new Date(r.createdAt);
+        const updated = new Date(r.updatedAt);
+        if (Number.isNaN(created.getTime()) || Number.isNaN(updated.getTime())) return null;
+        return updated.getTime() - created.getTime();
+      })
+      .filter((d): d is number => d !== null);
+
+    if (!durations.length) return "N/A";
+
+    const avgMs = durations.reduce((sum, d) => sum + d, 0) / durations.length;
+    const avgDate = new Date(now.getTime() - avgMs);
+    return formatDistanceToNow(avgDate, { addSuffix: false });
+  }, [reports]);
   
   const recentReports = useMemo(() => {
     if (!reports || reports.length === 0) return [];
@@ -28,31 +67,31 @@ export default function FieldAdminDashboard() {
   const statsCards = [
     {
       title: 'Assigned to You',
-      value: stats?.assignedToYou ?? 0,
+      value: assignedCount,
       icon: <FileText className="h-5 w-5 text-blue-500" />,
-      description: 'Reports assigned to you',
+      description: 'Reports currently assigned to you',
       color: 'bg-blue-100 text-blue-800',
     },
     {
-      title: 'In Progress',
-      value: reports?.filter(r => r.status === 'in_progress').length ?? 0,
+      title: 'Pending Tasks',
+      value: pendingTasksCount,
       icon: <Clock className="h-5 w-5 text-amber-500" />,
-      description: 'Reports in progress',
+      description: 'Assigned reports waiting on you',
       color: 'bg-amber-100 text-amber-800',
     },
     {
-      title: 'Pending Approval',
-      value: reports?.filter(r => r.status === 'pending_approval').length ?? 0,
-      icon: <AlertCircle className="h-5 w-5 text-purple-500" />,
-      description: 'Waiting for approval',
-      color: 'bg-purple-100 text-purple-800',
+      title: 'Resolved This Month',
+      value: resolvedThisMonthCount,
+      icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+      description: 'Reports you helped resolve',
+      color: 'bg-green-100 text-green-800',
     },
     {
-      title: 'Resolved',
-      value: reports?.filter(r => r.status === 'resolved').length ?? 0,
-      icon: <CheckCircle className="h-5 w-5 text-green-500" />,
-      description: 'Reports resolved',
-      color: 'bg-green-100 text-green-800',
+      title: 'Avg Resolution Time',
+      value: avgResolutionTime,
+      icon: <Clock className="h-5 w-5 text-purple-500" />,
+      description: 'Average time from assign to resolve',
+      color: 'bg-purple-100 text-purple-800',
     },
   ];
 
@@ -61,7 +100,7 @@ export default function FieldAdminDashboard() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Field Admin Dashboard</h1>
         <p className="text-muted-foreground">
-          Manage your assigned reports and pending approvals
+          Track and complete the reports assigned to you
         </p>
       </div>
 
@@ -91,7 +130,7 @@ export default function FieldAdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : stat.value}
+                    {isLoadingReports ? <Loader2 className="h-6 w-6 animate-spin" /> : stat.value}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {stat.description}
@@ -131,7 +170,7 @@ export default function FieldAdminDashboard() {
                             {report.title}
                           </h4>
                           <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(report.updatedAt), { addSuffix: true })}
+                            {getRelativeTime(report.updatedAt)}
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
@@ -162,7 +201,7 @@ export default function FieldAdminDashboard() {
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common tasks for field admins</CardDescription>
+              <CardDescription>Jump to your most common tasks</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <Button 
@@ -172,22 +211,6 @@ export default function FieldAdminDashboard() {
               >
                 <FileText className="mr-2 h-4 w-4" />
                 View My Reports
-              </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                onClick={() => navigate('/field-admin/approvals')}
-              >
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Review Pending Approvals
-              </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                onClick={() => navigate('/admin/reports/create')}
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                Create New Report
               </Button>
               <Button 
                 variant="outline" 

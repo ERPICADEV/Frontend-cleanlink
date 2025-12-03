@@ -15,6 +15,14 @@ const statusConfig: Record<ReportStatus, { label: string; className: string }> =
     label: "Assigned",
     className: "bg-status-assigned-bg text-amber-800 border-status-assigned/30",
   },
+  in_progress: {
+    label: "In Progress",
+    className: "bg-amber-100 text-amber-800 border-amber-200",
+  },
+  pending_approval: {
+    label: "Pending Approval",
+    className: "bg-purple-100 text-purple-800 border-purple-200",
+  },
   resolved: {
     label: "Resolved",
     className: "bg-status-resolved-bg text-green-800 border-status-resolved/30",

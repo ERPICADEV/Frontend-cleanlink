@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ChevronDown, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { ReportsFilters } from "@/components/admin/reports/ReportsFilters";
 import { ReportsTable } from "@/components/admin/reports/ReportsTable";
 import { AssignReportModal } from "@/components/admin/modals/AssignReportModal";
@@ -216,13 +215,7 @@ export default function ReportsManagement() {
   };
 
   return (
-    <AdminLayout
-      breadcrumbs={[
-        { label: "Dashboard", href: "/admin" },
-        { label: "Reports" },
-      ]}
-    >
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Page Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Reports Management</h1>
@@ -389,8 +382,6 @@ export default function ReportsManagement() {
             </div>
           </div>
         )}
-      </div>
-
       {/* Modals */}
       <AssignReportModal
         open={assignModalOpen}
@@ -406,6 +397,6 @@ export default function ReportsManagement() {
         onResolve={handleResolveSubmit}
         isLoading={isResolving}
       />
-    </AdminLayout>
+    </div>
   );
 }
