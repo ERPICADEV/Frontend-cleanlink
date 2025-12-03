@@ -9,6 +9,7 @@ import {
 } from "react";
 import apiClient, { setAuthToken } from "@/lib/apiClient";
 
+// In AuthContext.tsx, update the AuthUser interface:
 interface AuthUser {
   id: string;
   username?: string | null;
@@ -19,7 +20,7 @@ interface AuthUser {
   badges?: string[];
   avatarUrl?: string | null;
   bio?: string | null;
-  role?: "user" | "admin" | "super_admin";
+  role?: "user" | "field_admin" |"super_admin"; // UPDATED
   adminRegion?: string | null;
   permissions?: string[];
   level_info?: {
@@ -30,7 +31,6 @@ interface AuthUser {
     next_level_at: number | null;
   };
 }
-
 interface AuthContextValue {
   user: AuthUser | null;
   token: string | null;

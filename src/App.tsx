@@ -24,6 +24,8 @@ import ReportsManagement from "./pages/admin/ReportsManagement";
 import AuditLogsPage from "./pages/admin/AuditLogs";
 import AdminAnalytics from "./pages/admin/Analytics";
 import AdminSettings from "./pages/admin/Settings";
+import { AdminRoutes } from "./components/admin/AdminRoutes";
+import { FieldAdminRoutes } from "./components/admin/FieldAdminRoutes";
 
 const queryClient = new QueryClient();
 
@@ -54,46 +56,26 @@ const App = () => (
           <Route path="/settings" element={<Settings />} />
           <Route path="/settings/location" element={<LocationSettings />} />
           {/* Admin Routes */}
-          <Route
-            path="/admin"
+          // Update the admin routes section in App.tsx:
+       {/* Admin Routes */}
+       <Route
+            path="/admin/*"
             element={
               <AdminRoute>
-                <AdminDashboard />
+                <AdminRoutes />
               </AdminRoute>
             }
           />
+          
           <Route
-            path="/admin/reports"
+            path="/field-admin/*"
             element={
               <AdminRoute>
-                <ReportsManagement />
+                <FieldAdminRoutes />
               </AdminRoute>
             }
           />
-          <Route
-            path="/admin/audit/:reportId"
-            element={
-              <AdminRoute>
-                <AuditLogsPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/analytics"
-            element={
-              <AdminRoute>
-                <AdminAnalytics />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/settings"
-            element={
-              <AdminRoute>
-                <AdminSettings />
-              </AdminRoute>
-            }
-          />
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -7,7 +7,7 @@ export const useAdmin = () => {
 
   const isAdmin = useMemo(() => {
     if (!user || isBootstrapping) return undefined;
-    return user.role === "admin" || user.role === "super_admin" || user.permissions?.includes("admin:access");
+    return user.role === "field_admin" || user.role === "super_admin" || user.permissions?.includes("admin:access");
   }, [user, isBootstrapping]);
 
   const adminRegion = useMemo(() => {

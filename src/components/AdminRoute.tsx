@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
@@ -10,20 +9,21 @@ interface AdminRouteProps {
 
 export default function AdminRoute({ children }: AdminRouteProps) {
   const navigate = useNavigate();
-  const { isAuthenticated, isBootstrapping } = useAuth();
-  const { isAdmin } = useAdmin();
+  const { user, isBootstrapping } = useAuth();
+
+  const isAdmin = user?.role && ['super_admin', 'field_admin', 'normal_admin'].includes(user.role);
 
   useEffect(() => {
     if (!isBootstrapping) {
-      if (!isAuthenticated) {
+      if (!user) {
         navigate("/login");
-      } else if (isAdmin === false) {
+      } else if (!isAdmin) {
         navigate("/");
       }
     }
-  }, [isAdmin, isAuthenticated, isBootstrapping, navigate]);
+  }, [isAdmin, user, isBootstrapping, navigate]);
 
-  if (isBootstrapping || isAdmin === undefined) {
+  if (isBootstrapping) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -31,10 +31,9 @@ export default function AdminRoute({ children }: AdminRouteProps) {
     );
   }
 
-  if (!isAuthenticated || !isAdmin) {
+  if (!user || !isAdmin) {
     return null; // Will redirect
   }
 
   return <>{children}</>;
 }
-

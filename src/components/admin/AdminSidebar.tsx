@@ -14,13 +14,24 @@ interface AdminSidebarProps {
   collapsed?: boolean;
 }
 
-const navItems = [
+interface NavItem {
+  title: string;
+  url: string;
+  icon: any;
+  end?: boolean;
+  disabled?: boolean;
+}
+
+
+const navItems: NavItem[] = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard, end: true },
   { title: "Reports", url: "/admin/reports", icon: FileText },
-  // Audit Logs are accessed via individual report pages, not a list view
+  // Example disabled item:
+  // { title: "Audit Logs", url: "/admin/logs", icon: ScrollText, disabled: true },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
   { title: "Settings", url: "/admin/settings", icon: SettingsIcon },
 ];
+
 
 export function AdminSidebar({ collapsed = false }: AdminSidebarProps) {
   return (

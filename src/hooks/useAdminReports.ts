@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchAdminReports, assignReport, resolveReport, type AssignReportPayload, type ResolveReportPayload } from "@/services/adminService";
+import { fetchAdminReports, assignReport, resolveReport } from "@/services/adminService";
+import { AssignReportPayload, ResolveReportPayload } from "@/types/admin";
 import { useToast } from "@/hooks/use-toast";
 import type { Report, ReportsFilter, ReportCategory } from "@/types/admin";
 

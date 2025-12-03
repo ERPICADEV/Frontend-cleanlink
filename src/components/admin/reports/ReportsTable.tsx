@@ -28,6 +28,7 @@ interface ReportsTableProps {
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   onAssign: (report: Report) => void;
+  isLoading?: boolean;
   onResolve: (report: Report) => void;
   onViewAudit: (reportId: string) => void;
 }
