@@ -49,6 +49,7 @@ export default function FieldAdminApprovals() {
           Review and approve work submitted by field admins
         </p>
       </div>
+      </div>
 
       {isLoading ? (
         <Card>
