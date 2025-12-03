@@ -21,9 +21,9 @@ export default function RoleBasedLayout({ children, breadcrumbs }: RoleBasedLayo
     return <div>Please log in to access the admin panel.</div>;
   }
 
-  // Super Admin gets the full admin dashboard
+  // Super Admin: pages are already wrapped in AdminLayout themselves
   if (user.role === 'super_admin') {
-    return <AdminLayout breadcrumbs={breadcrumbs}>{children}</AdminLayout>;
+    return <>{children}</>;
   }
 
   // Field Admin / Normal Admin get the field admin dashboard

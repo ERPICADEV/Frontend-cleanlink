@@ -31,6 +31,7 @@ interface ReportsTableProps {
   isLoading?: boolean;
   onResolve: (report: Report) => void;
   onViewAudit: (reportId: string) => void;
+  showAssign?: boolean;
 }
 
 export function ReportsTable({
@@ -40,6 +41,7 @@ export function ReportsTable({
   onAssign,
   onResolve,
   onViewAudit,
+  showAssign = true,
 }: ReportsTableProps) {
   const allSelected = reports.length > 0 && selectedIds.length === reports.length;
   const someSelected = selectedIds.length > 0 && selectedIds.length < reports.length;
@@ -191,15 +193,17 @@ export function ReportsTable({
               <div className="col-span-2 flex items-center justify-end gap-2">
                 {/* Desktop Actions */}
                 <div className="hidden xl:flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onAssign(report)}
-                    disabled={report.status === "resolved"}
-                  >
-                    <UserPlus className="w-4 h-4 mr-1" />
-                    Assign
-                  </Button>
+                  {showAssign && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onAssign(report)}
+                      disabled={report.status === "resolved"}
+                    >
+                      <UserPlus className="w-4 h-4 mr-1" />
+                      Assign
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -228,10 +232,12 @@ export function ReportsTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onAssign(report)} disabled={report.status === "resolved"}>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Assign Report
-                      </DropdownMenuItem>
+                      {showAssign && (
+                        <DropdownMenuItem onClick={() => onAssign(report)} disabled={report.status === "resolved"}>
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Assign Report
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => onResolve(report)} disabled={report.status === "resolved"}>
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Resolve Report
@@ -341,16 +347,20 @@ export function ReportsTable({
                       {report.assignedToName}
                     </span>
                   ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs shrink-0"
-                      onClick={() => onAssign(report)}
-                      disabled={report.status === "resolved"}
-                    >
-                      <UserPlus className="w-3 h-3 mr-1" />
-                      Assign
-                    </Button>
+                    showAssign ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs shrink-0"
+                        onClick={() => onAssign(report)}
+                        disabled={report.status === "resolved"}
+                      >
+                        <UserPlus className="w-3 h-3 mr-1" />
+                        Assign
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Unassigned</span>
+                    )
                   )}
                 </div>
               </div>

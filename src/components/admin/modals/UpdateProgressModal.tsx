@@ -68,6 +68,18 @@ export function UpdateProgressModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const trimmedNotes = notes.trim();
+
+    // Backend requires completion_details >= 20 characters when submitting for approval
+    if (status === "submitted_for_approval" && trimmedNotes.length < 20) {
+      toast({
+        title: "More details needed",
+        description: "Please provide at least 20 characters describing the completed work before submitting for approval.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       setIsUploading(true);
@@ -86,7 +98,7 @@ export function UpdateProgressModal({
       
       await onSubmit({
         progress_status: status,
-        notes: notes.trim() || undefined,
+        notes: trimmedNotes || undefined,
         photos: photos.length > 0 ? photos : undefined,
       });
       

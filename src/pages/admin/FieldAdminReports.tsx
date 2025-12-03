@@ -250,6 +250,7 @@ export default function FieldAdminReports() {
             onAssign={handleAssign}
             onResolve={handleResolve}
             onViewAudit={handleViewAudit}
+            showAssign={false}
           />
         </CardContent>
       </Card>
