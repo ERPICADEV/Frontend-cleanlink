@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -15,6 +15,9 @@ import {
   RefreshCcw,
   Edit,
   MoreVertical,
+  ChevronLeft,
+  ChevronRight,
+  X,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -42,6 +45,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 import {
   createComment,
   fetchReportDetail,
@@ -78,6 +85,7 @@ const PostDetail = () => {
   const [commentText, setCommentText] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
   const commentActions = useCommentActions({
     reportId: id!,
@@ -244,6 +252,52 @@ const PostDetail = () => {
   const legitScore = report.aiScore?.legit ?? 0.5;
   const severityScore = report.aiScore?.severity ?? 0.5;
   const resolutionPhotos = report.resolutionPhotos || [];
+  
+  // Combine all images for lightbox navigation
+  const allImages = useMemo(() => {
+    const images: { url: string; alt: string }[] = [];
+    if (imageUrl) {
+      images.push({ url: imageUrl, alt: report.title });
+    }
+    resolutionPhotos.forEach((photo, index) => {
+      images.push({ url: photo, alt: `Resolved photo ${index + 1}` });
+    });
+    return images;
+  }, [imageUrl, resolutionPhotos, report.title]);
+  
+  const currentImage = selectedImageIndex !== null ? allImages[selectedImageIndex] : null;
+  
+  const handleImageClick = (index: number) => {
+    setSelectedImageIndex(index);
+  };
+  
+  const handleNextImage = () => {
+    if (selectedImageIndex !== null && selectedImageIndex < allImages.length - 1) {
+      setSelectedImageIndex(selectedImageIndex + 1);
+    }
+  };
+  
+  const handlePrevImage = () => {
+    if (selectedImageIndex !== null && selectedImageIndex > 0) {
+      setSelectedImageIndex(selectedImageIndex - 1);
+    }
+  };
+  
+  // Keyboard navigation for image lightbox
+  useEffect(() => {
+    if (selectedImageIndex === null) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft" && selectedImageIndex > 0) {
+        setSelectedImageIndex(selectedImageIndex - 1);
+      } else if (e.key === "ArrowRight" && selectedImageIndex < allImages.length - 1) {
+        setSelectedImageIndex(selectedImageIndex + 1);
+      }
+    };
+    
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedImageIndex, allImages.length]);
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
@@ -388,11 +442,17 @@ const PostDetail = () => {
 
           {/* Original Image */}
           {imageUrl && (
-            <img
-              src={imageUrl}
-              alt={report.title}
-              className="w-full max-h-[500px] object-cover"
-            />
+            <button
+              type="button"
+              onClick={() => handleImageClick(0)}
+              className="w-full cursor-pointer hover:opacity-90 transition-opacity"
+            >
+              <img
+                src={imageUrl}
+                alt={report.title}
+                className="w-full max-h-[500px] object-cover"
+              />
+            </button>
           )}
 
           {/* Resolution Photos (if any) */}
@@ -404,8 +464,8 @@ const PostDetail = () => {
                   <button
                     key={index}
                     type="button"
-                    className="relative aspect-video overflow-hidden rounded-md border bg-muted"
-                    onClick={() => window.open(photo, "_blank")}
+                    className="relative aspect-video overflow-hidden rounded-md border bg-muted hover:opacity-90 transition-opacity cursor-pointer"
+                    onClick={() => handleImageClick(imageUrl ? index + 1 : index)}
                   >
                     <img
                       src={photo}
@@ -520,6 +580,60 @@ const PostDetail = () => {
           />
         </>
       )}
+
+      {/* Image Lightbox Modal */}
+      <Dialog open={selectedImageIndex !== null} onOpenChange={(open) => !open && setSelectedImageIndex(null)}>
+        <DialogContent className="max-w-7xl w-full h-[90vh] p-0 bg-black/95 border-none [&>button]:hidden">
+          {currentImage && (
+            <div className="relative w-full h-full flex items-center justify-center">
+              {/* Close Button */}
+              <button
+                onClick={() => setSelectedImageIndex(null)}
+                className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              
+              {/* Previous Button */}
+              {selectedImageIndex !== null && selectedImageIndex > 0 && (
+                <button
+                  onClick={handlePrevImage}
+                  className="absolute left-4 z-50 text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="w-8 h-8" />
+                </button>
+              )}
+              
+              {/* Next Button */}
+              {selectedImageIndex !== null && selectedImageIndex < allImages.length - 1 && (
+                <button
+                  onClick={handleNextImage}
+                  className="absolute right-4 z-50 text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="w-8 h-8" />
+                </button>
+              )}
+              
+              {/* Image */}
+              <img
+                src={currentImage.url}
+                alt={currentImage.alt}
+                className="max-w-full max-h-full object-contain"
+              />
+              
+              {/* Image Counter */}
+              {allImages.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm">
+                  {selectedImageIndex !== null ? selectedImageIndex + 1 : 0} / {allImages.length}
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>

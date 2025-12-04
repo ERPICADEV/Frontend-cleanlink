@@ -140,12 +140,18 @@ export const createReport = async (payload: CreateReportPayload) => {
 };
 
 export const uploadImage = async (file: File): Promise<string> => {
-  // For now, we'll use a placeholder service
-  // In production, you'd upload to S3/Cloudinary/your own server
-  return new Promise((resolve) => {
-    // Simulate upload and return a placeholder URL
-    const fakeUrl = `https://picsum.photos/800/600?random=${Date.now()}`;
-    setTimeout(() => resolve(fakeUrl), 1000);
+  // Convert file to base64 data URL
+  // This can be stored directly in the database and used as an image URL
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      resolve(reader.result as string);
+    };
+    reader.onerror = (error) => {
+      console.error('Error reading file:', error);
+      reject(new Error('Failed to read image file'));
+    };
+    reader.readAsDataURL(file);
   });
 };
 export interface VoteResponse {
