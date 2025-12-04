@@ -2,7 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchAuditLogs } from "@/services/adminService";
 import type { AuditLog } from "@/types/admin";
 
-export const useAuditLogs = (reportId: string | undefined) => {
+export const useAuditLogs = (reportId: string | undefined): {
+  data: AuditLog[];
+  isLoading: boolean;
+  error: Error | null | undefined;
+} => {
   const {
     data: auditData,
     isLoading,
@@ -28,7 +32,7 @@ export const useAuditLogs = (reportId: string | undefined) => {
   return {
     data: auditLogs,
     isLoading,
-    error,
+    error: error || undefined,
   };
 };
 

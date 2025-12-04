@@ -10,9 +10,17 @@ export default function AdminDashboard() {
   // Convert reportsByCategory from Record to array
   const reportsByCategoryArray = useMemo(() => {
     if (!stats?.reportsByCategory) return [];
+    // Handle both array and Record formats
+    if (Array.isArray(stats.reportsByCategory)) {
+      return stats.reportsByCategory.map((item: any) => ({
+        category: typeof item === 'object' && item !== null ? (item.category || item.name || 'other') : String(item),
+        count: typeof item === 'object' && item !== null ? (item.count || item.value || 0) : 0,
+      }));
+    }
+    // Handle Record format
     return Object.entries(stats.reportsByCategory).map(([category, count]) => ({
-      category,
-      count,
+      category: String(category),
+      count: typeof count === 'number' ? count : 0,
     }));
   }, [stats]);
 

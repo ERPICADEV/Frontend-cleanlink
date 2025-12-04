@@ -4,10 +4,22 @@ import type {
   AssignReportPayload, 
   ResolveReportPayload, 
   AuditLog, 
-  AdminUser as AdminUserType,
-  ReportProgress,
-  ProgressStatus
+  AdminUser as AdminUserType
 } from "@/types/admin";
+
+// Define types locally if not exported from admin types
+export type ProgressStatus = "not_started" | "in_progress" | "completed" | "on_hold";
+
+export interface ReportProgress {
+  id: string;
+  report_id: string;
+  progress_status: ProgressStatus;
+  notes?: string;
+  photos?: string[];
+  completion_details?: string;
+  submitted_at?: string;
+  admin_id?: string;
+}
 
 // Extend the existing types
 export interface AdminReport extends Report {

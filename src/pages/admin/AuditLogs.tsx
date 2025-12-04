@@ -142,11 +142,10 @@ export default function AuditLogsPage() {
   });
 
   // Fetch audit logs
-  const {
-    data: auditLogs = [],
-    isLoading: auditLoading,
-    isError: auditError,
-  } = useAuditLogs(reportId);
+  const auditLogsResult: { data: AuditLog[]; isLoading: boolean; error: Error | undefined } = useAuditLogs(reportId);
+  const auditLogs = auditLogsResult.data ?? [];
+  const auditLoading = auditLogsResult.isLoading;
+  const auditError = auditLogsResult.error;
 
   // Transform report data to match our type
   const report: Report | null = reportData ? {

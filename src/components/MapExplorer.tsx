@@ -129,33 +129,38 @@ const MapExplorer = ({ category, onSelectReport }: MapExplorerProps) => {
       </div>
 
       <div className="relative h-80">
-        <MapContainer
-          key={mapCenter.join(",")}
-          center={mapCenter}
-          zoom={12}
-          minZoom={4}
-          scrollWheelZoom
-          className="h-full w-full"
-        >
-          <BoundsTracker onBoundsChange={handleBoundsChange} />
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+        {(() => {
+          const MapContainerAny = MapContainer as any;
+          const TileLayerAny = TileLayer as any;
+          const CircleMarkerAny = CircleMarker as any;
+          return (
+            <MapContainerAny
+              key={mapCenter.join(",")}
+              center={mapCenter}
+              zoom={12}
+              minZoom={4}
+              scrollWheelZoom
+              className="h-full w-full"
+            >
+              <BoundsTracker onBoundsChange={handleBoundsChange} />
+              <TileLayerAny
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
 
-          {markers.map((feature) => {
-            const [lng, lat] = feature.geometry.coordinates;
-            return (
-              <CircleMarker
-                center={[lat, lng]}
-                key={feature.id}
-                pathOptions={{
-                  color: feature.properties.color || "#2563eb",
-                  fillColor: feature.properties.color || "#2563eb",
-                  fillOpacity: 0.35,
-                }}
-                radius={8}
-              >
+              {markers.map((feature) => {
+                const [lng, lat] = feature.geometry.coordinates;
+                return (
+                  <CircleMarkerAny
+                    center={[lat, lng]}
+                    key={feature.id}
+                    pathOptions={{
+                      color: feature.properties.color || "#2563eb",
+                      fillColor: feature.properties.color || "#2563eb",
+                      fillOpacity: 0.35,
+                    }}
+                    radius={8}
+                  >
                 <Popup>
                   <div className="space-y-1">
                     <p className="text-sm font-semibold leading-tight">
@@ -178,10 +183,12 @@ const MapExplorer = ({ category, onSelectReport }: MapExplorerProps) => {
                     </Button>
                   </div>
                 </Popup>
-              </CircleMarker>
+              </CircleMarkerAny>
             );
           })}
-        </MapContainer>
+            </MapContainerAny>
+          );
+        })()}
 
         <div className="absolute left-3 top-3 z-[500] flex flex-wrap gap-2">
           {statusLegend.map((item) => (

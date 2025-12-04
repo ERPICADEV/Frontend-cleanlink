@@ -90,8 +90,8 @@ export function ReportsTable({
           <div className="col-span-1">Status</div>
           <div className="col-span-1">Severity</div>
           <div className="col-span-2">Assigned To</div>
-          <div className="col-span-1">Created</div>
-          <div className="col-span-2 text-right">Actions</div>
+          <div className="col-span-1 -ml-10 text-left">Created</div>
+          <div className="col-span-0 text-right">Actions</div>
         </div>
 
         {/* Table Body - Desktop View */}
@@ -160,7 +160,7 @@ export function ReportsTable({
               </div>
 
               {/* Assigned To */}
-              <div className="col-span-2 flex items-center text-sm min-w-0">
+              <div className="col-span-1 flex items-center text-sm min-w-0">
                 {report.assignedToName ? (
                   <span className="flex items-center gap-1.5 truncate">
                     <span className="font-medium truncate">{report.assignedToName}</span>
@@ -176,10 +176,10 @@ export function ReportsTable({
               </div>
 
               {/* Created */}
-              <div className="col-span-1 flex items-center">
+              <div className="col-span-2 ml-5 items-center flex text-center">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    <span className="text-sm text-muted-foreground">
                       {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
                     </span>
                   </TooltipTrigger>
