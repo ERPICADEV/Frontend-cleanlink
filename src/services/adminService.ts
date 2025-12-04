@@ -214,9 +214,4 @@ export const fetchAdminStats = async (): Promise<AdminStats> => {
   };
 };
 
-// GET /api/v1/admin/audit/reports/:id
-export const fetchReportAuditLogs = async (reportId: string): Promise<AuditLog[]> => {
-  const { data } = await apiClient.get<{ data: AuditLog[] }>(`/admin/audit/reports/${reportId}`);
-  return data.data || [];
-};
 

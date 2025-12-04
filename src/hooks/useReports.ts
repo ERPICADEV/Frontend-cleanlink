@@ -23,7 +23,7 @@ export const useReports = (filters: ReportsFilters = {}) => {
     queryFn: ({ pageParam }) =>
       fetchReports({
         ...normalizedFilters,
-        cursor: pageParam,
+        cursor: pageParam as string | undefined,
       }),
     getNextPageParam: (lastPage) => lastPage.paging?.next_cursor ?? undefined,
   });

@@ -2,9 +2,19 @@ import { FileText, UserCheck, CheckCircle2, Clock, Loader2 } from "lucide-react"
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { StatCard } from "@/components/admin/dashboard/StatCard";
 import { useAdminStats } from "@/hooks/useAdminStats";
+import { useMemo } from "react";
 
 export default function AdminDashboard() {
-  const { stats, loading, error } = useAdminStats();
+  const { data: stats, isLoading: loading, error } = useAdminStats();
+  
+  // Convert reportsByCategory from Record to array
+  const reportsByCategoryArray = useMemo(() => {
+    if (!stats?.reportsByCategory) return [];
+    return Object.entries(stats.reportsByCategory).map(([category, count]) => ({
+      category,
+      count,
+    }));
+  }, [stats]);
 
   return (
     <AdminLayout breadcrumbs={[{ label: "Dashboard" }]}>
@@ -32,7 +42,7 @@ export default function AdminDashboard() {
         ) : error ? (
           <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
             <p className="text-destructive text-sm">
-              Failed to load stats: {error}
+              Failed to load stats: {error instanceof Error ? error.message : String(error)}
             </p>
           </div>
         ) : (
@@ -114,11 +124,11 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
-            ) : stats?.reportsByCategory && stats.reportsByCategory.length > 0 ? (
+            ) : reportsByCategoryArray.length > 0 ? (
               <div className="space-y-3">
-                {stats.reportsByCategory.map((item: any, i: number) => {
+                {reportsByCategoryArray.map((item, i: number) => {
                   const maxCount = Math.max(
-                    ...stats.reportsByCategory.map((c: any) => c.count)
+                    ...reportsByCategoryArray.map((c) => c.count)
                   );
                   const colors = [
                     "bg-red-500",

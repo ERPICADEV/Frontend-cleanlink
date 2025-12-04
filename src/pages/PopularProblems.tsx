@@ -25,7 +25,7 @@ const PopularProblems = () => {
         sort: view === "local" ? "hot" : "top",
         limit: 25,
       }),
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 
   const posts = data?.data ?? [];

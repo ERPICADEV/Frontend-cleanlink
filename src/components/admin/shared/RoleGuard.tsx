@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 // These roles should match what's defined in your backend
-type AdminRole = 'super_admin' | 'admin' | 'user';
+type AdminRole = 'super_admin' | 'field_admin' | 'user';
 
 interface RoleGuardProps {
   allowedRoles: AdminRole[];
@@ -26,7 +26,8 @@ export const useUserRole = () => {
   const { user } = useAuth();
   return {
     isSuperAdmin: user?.role === 'super_admin',
-    isAdmin: user?.role === 'admin',
+    isAdmin: user?.role === 'field_admin' || user?.role === 'super_admin',
+    isFieldAdmin: user?.role === 'field_admin',
     isUser: user?.role === 'user',
     userRole: user?.role as AdminRole | undefined,
   };
@@ -40,13 +41,13 @@ export const SuperAdminOnly = ({ children, fallback }: Omit<RoleGuardProps, 'all
 );
 
 export const AdminOnly = ({ children, fallback }: Omit<RoleGuardProps, 'allowedRoles'>) => (
-  <RoleGuard allowedRoles={['admin']} fallback={fallback}>
+  <RoleGuard allowedRoles={['field_admin', 'super_admin']} fallback={fallback}>
     {children}
   </RoleGuard>
 );
 
 export const AdminOrSuperAdmin = ({ children, fallback }: Omit<RoleGuardProps, 'allowedRoles'>) => (
-  <RoleGuard allowedRoles={['super_admin', 'admin']} fallback={fallback}>
+  <RoleGuard allowedRoles={['super_admin', 'field_admin']} fallback={fallback}>
     {children}
   </RoleGuard>
 );

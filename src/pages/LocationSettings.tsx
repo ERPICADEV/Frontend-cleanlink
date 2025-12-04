@@ -27,10 +27,14 @@ const LocationSettings = () => {
   const currentRegion = user?.region;
   const [country, setCountry] = useState("India");
   const [state, setState] = useState(
-    (currentRegion as any)?.state || "Delhi"
+    (currentRegion && typeof currentRegion === 'object' && 'state' in currentRegion) 
+      ? String(currentRegion.state) 
+      : "Delhi"
   );
   const [city, setCity] = useState(
-    (currentRegion as any)?.city || ""
+    (currentRegion && typeof currentRegion === 'object' && 'city' in currentRegion) 
+      ? String(currentRegion.city) 
+      : ""
   );
   const [showCityOnly, setShowCityOnly] = useState(false);
   const [showNearby, setShowNearby] = useState(true);

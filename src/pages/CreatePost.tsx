@@ -148,7 +148,7 @@ const CreatePost = () => {
         country: "India",
         visibility,
       },
-      images: imageData ? [{ url: imageData }] : undefined,
+      images: imageData ? [imageData] : undefined,
       anonymous,
     };
 

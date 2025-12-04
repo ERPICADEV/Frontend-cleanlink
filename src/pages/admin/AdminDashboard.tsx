@@ -70,7 +70,7 @@ export default function AdminDashboard() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
             <p className="text-muted-foreground">
-              Welcome back, {user?.name}!
+              Welcome back, {user?.username || user?.email || 'Admin'}!
             </p>
           </div>
           <TabsList className="grid w-full grid-cols-3 max-w-md">
@@ -124,7 +124,7 @@ export default function AdminDashboard() {
                         <div className="mt-1">
                           {report.status === 'resolved' ? (
                             <CheckCircle className="h-4 w-4 text-green-500" />
-                          ) : report.status === 'rejected' ? (
+                          ) : report.status === 'invalid' ? (
                             <AlertTriangle className="h-4 w-4 text-red-500" />
                           ) : (
                             <Clock className="h-4 w-4 text-amber-500" />
@@ -205,9 +205,13 @@ export default function AdminDashboard() {
                 </div>
               ) : reports && reports.length > 0 ? (
                 <ReportsTable 
-                  reports={reports} 
-                  onView={(id) => navigate(`/admin/reports/${id}`)}
-                  onEdit={(id) => navigate(`/admin/reports/${id}/edit`)}
+                  reports={reports}
+                  selectedIds={[]}
+                  onSelectionChange={() => {}}
+                  onAssign={() => {}}
+                  onResolve={(report) => navigate(`/admin/reports/${report.id}/resolve`)}
+                  onViewAudit={(id) => navigate(`/admin/audit/${id}`)}
+                  showAssign={false}
                 />
               ) : (
                 <div className="text-center py-12">
@@ -239,7 +243,7 @@ export default function AdminDashboard() {
               <div className="space-y-4">
                 <div>
                   <h4 className="text-sm font-medium">Name</h4>
-                  <p className="text-muted-foreground">{user?.name || 'N/A'}</p>
+                  <p className="text-muted-foreground">{user?.username || user?.email || 'N/A'}</p>
                 </div>
                 <div>
                   <h4 className="text-sm font-medium">Email</h4>

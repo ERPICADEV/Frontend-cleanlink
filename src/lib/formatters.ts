@@ -1,4 +1,5 @@
 import type { ReportLocation } from "@/services/reportService";
+import type { RegionLocation } from "@/types/user";
 
 export const formatRelativeTime = (input: string | Date | undefined | null): string => {
   // Add null/undefined check
@@ -52,14 +53,18 @@ export const formatStatusLabel = (status?: string) => {
     .join(" ");
 };
 
-export const formatLocationName = (location?: ReportLocation | null) => {
+export const formatLocationName = (location?: ReportLocation | RegionLocation | null) => {
   if (!location) return "Unknown location";
-  if (location.area_name) return location.area_name;
-  if (location.address) return location.address;
-  const parts = [location.city, location.state, location.country].filter(Boolean);
+  
+  // Handle both ReportLocation and RegionLocation types
+  const loc = location as ReportLocation | RegionLocation;
+  
+  if ('area_name' in loc && loc.area_name) return loc.area_name;
+  if ('address' in loc && loc.address) return loc.address;
+  const parts = [loc.city, loc.state, loc.country].filter(Boolean);
   if (parts.length) return parts.join(", ");
-  if (location.lat && location.lng) {
-    return `Lat ${location.lat.toFixed(4)}, Lng ${location.lng.toFixed(4)}`;
+  if ('lat' in loc && 'lng' in loc && loc.lat && loc.lng) {
+    return `Lat ${loc.lat.toFixed(4)}, Lng ${loc.lng.toFixed(4)}`;
   }
   return "Unknown location";
 };

@@ -5,7 +5,7 @@ import { useAdminReports } from "@/hooks/useAdminReports";
 import { useMemo } from "react";
 
 export default function AdminAnalytics() {
-  const { stats, loading: statsLoading } = useAdminStats();
+  const { data: stats, isLoading: statsLoading } = useAdminStats();
   const { reports, loading: reportsLoading } = useAdminReports();
 
   // Calculate resolution rate
@@ -17,7 +17,13 @@ export default function AdminAnalytics() {
   }, [stats]);
 
   // Calculate reports by category from stats
-  const reportsByCategory = stats?.reportsByCategory || [];
+  const reportsByCategory = useMemo(() => {
+    if (!stats?.reportsByCategory) return [];
+    return Object.entries(stats.reportsByCategory).map(([category, count]) => ({
+      category,
+      count,
+    }));
+  }, [stats]);
 
   // Calculate top reporters from reports data
   const topReporters = useMemo(() => {
@@ -200,7 +206,7 @@ export default function AdminAnalytics() {
             {loading ? (
               <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-8 bgcolor-muted animate-pulse rounded" />
+                  <div key={i} className="h-8 bg-muted animate-pulse rounded" />
                 ))}
               </div>
             ) : topReporters.length > 0 ? (

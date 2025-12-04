@@ -28,7 +28,7 @@ export function AdminHeader({
   const { adminRegion } = useAdmin();
   
   const adminName = user?.username || user?.email || "Admin";
-  const region = adminRegion || user?.region?.city || "Unknown";
+  const region = adminRegion || (user?.region && typeof user.region === 'object' && 'city' in user.region ? String(user.region.city) : null) || "Unknown";
   return (
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 lg:px-6">
       {/* Left: Menu & Breadcrumbs */}

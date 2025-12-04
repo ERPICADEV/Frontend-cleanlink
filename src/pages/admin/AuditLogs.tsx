@@ -9,7 +9,7 @@ import { useAuditLogs } from "@/hooks/useAuditLogs";
 import { useQuery } from "@tanstack/react-query";
 import { fetchReportDetail } from "@/services/reportService";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Report, AuditLog } from "@/types/admin";
+import type { Report, AuditLog, ReportStatus, ReportCategory } from "@/types/admin";
 
 // Mock report data
 const mockReport: Report = {
@@ -153,8 +153,12 @@ export default function AuditLogsPage() {
     id: reportData.id,
     title: reportData.title,
     description: reportData.description,
-    category: reportData.category as any,
-    status: reportData.status as any,
+    category: (reportData.category === "pothole" || reportData.category === "garbage" || reportData.category === "flooding" || reportData.category === "street_maintenance" || reportData.category === "traffic" || reportData.category === "other") 
+      ? reportData.category as ReportCategory 
+      : "other",
+    status: (reportData.status === "pending" || reportData.status === "assigned" || reportData.status === "resolved" || reportData.status === "flagged" || reportData.status === "in_progress" || reportData.status === "pending_approval" || reportData.status === "duplicate" || reportData.status === "community_verified" || reportData.status === "invalid")
+      ? reportData.status as ReportStatus
+      : "pending",
     reporterId: reportData.reporter?.id || "",
     reporterName: reportData.reporter?.username || "Anonymous",
     severity: reportData.aiScore?.severity ? Math.round(reportData.aiScore.severity * 5) : undefined,
@@ -164,7 +168,7 @@ export default function AuditLogsPage() {
     assignedTo: reportData.mcdVerifiedBy,
     region: reportData.location?.city || reportData.location?.area_name || "Unknown",
     location: reportData.location,
-    images: reportData.images as string[],
+    images: Array.isArray(reportData.images) ? reportData.images as string[] : [],
     upvotes: reportData.upvotes,
     downvotes: reportData.downvotes,
     communityScore: reportData.communityScore,
