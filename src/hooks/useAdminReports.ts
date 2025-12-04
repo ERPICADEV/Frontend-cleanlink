@@ -63,12 +63,27 @@ export const useAdminReports = (initialFilters?: Partial<ReportsFilter>) => {
       status: r.status || "pending",
       reporterId: r.reporter?.id || "",
       reporterName: r.reporter?.username || "Anonymous",
-      severity: r.ai_score?.severity ? Math.round(r.ai_score.severity * 5) : undefined,
-      aiScore: r.ai_score ? (typeof r.ai_score === 'string' ? JSON.parse(r.ai_score) : r.ai_score) : undefined,
+      // Parse aiScore if it's a string, otherwise use it directly
+      aiScore: (() => {
+        if (!r.aiScore) return undefined;
+        return typeof r.aiScore === 'string' ? JSON.parse(r.aiScore) : r.aiScore;
+      })(),
+      // Calculate severity: aiScore.severity is 0-1, convert to 1-5 scale
+      severity: (() => {
+        const score = r.aiScore ? (typeof r.aiScore === 'string' ? JSON.parse(r.aiScore) : r.aiScore) : null;
+        if (score && typeof score === 'object' && score.severity !== undefined && score.severity !== null) {
+          // Convert 0-1 scale to 1-5 scale: severity * 4 + 1 gives 1-5 range
+          const severityValue = typeof score.severity === 'number' ? score.severity : parseFloat(score.severity);
+          if (!isNaN(severityValue)) {
+            return Math.max(1, Math.min(5, Math.round(severityValue * 4) + 1));
+          }
+        }
+        return undefined;
+      })(),
       createdAt: r.created_at || r.createdAt,
       updatedAt: r.updated_at || r.updatedAt,
-      assignedTo: r.mcd_verified_by || r.assignedTo,
-      assignedToName: r.assignedToName,
+      assignedTo: r.assigned_to || r.mcd_verified_by || r.assignedTo,
+      assignedToName: r.assignedToName || r.assigned_admin_name || null,
       region: r.reporter?.region?.city || r.reporter?.region?.area_name || r.region || "Unknown",
       location: r.location,
       images: r.images ? (typeof r.images === 'string' ? JSON.parse(r.images) : r.images) : [],

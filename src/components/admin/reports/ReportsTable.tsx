@@ -160,23 +160,27 @@ export function ReportsTable({
               </div>
 
               {/* Assigned To */}
-              <div className="col-span-1 flex items-center text-sm min-w-0">
+              <div className="col-span-2 -ml-3 flex items-center text-sm min-w-0">
                 {report.assignedToName ? (
                   <span className="flex items-center gap-1.5 truncate">
                     <span className="font-medium truncate">{report.assignedToName}</span>
-                    {report.region && (
-                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
-                        {report.region}
-                      </span>
-                    )}
                   </span>
                 ) : (
-                  <span className="text-muted-foreground">Unassigned</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onAssign(report)}
+                    disabled={report.status === "resolved"}
+                    className="h-7 text-xs"
+                  >
+                    <UserPlus className="w-3 h-3 mr-1" />
+                    Assign
+                  </Button>
                 )}
               </div>
 
               {/* Created */}
-              <div className="col-span-2 ml-5 items-center flex text-center">
+              <div className="col-span-1 -ml-12 items-center flex text-center">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="text-sm text-muted-foreground">
@@ -193,17 +197,6 @@ export function ReportsTable({
               <div className="col-span-2 flex items-center justify-end gap-2">
                 {/* Desktop Actions */}
                 <div className="hidden xl:flex items-center gap-1">
-                  {showAssign && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onAssign(report)}
-                      disabled={report.status === "resolved"}
-                    >
-                      <UserPlus className="w-4 h-4 mr-1" />
-                      Assign
-                    </Button>
-                  )}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -232,12 +225,6 @@ export function ReportsTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      {showAssign && (
-                        <DropdownMenuItem onClick={() => onAssign(report)} disabled={report.status === "resolved"}>
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Assign Report
-                        </DropdownMenuItem>
-                      )}
                       <DropdownMenuItem onClick={() => onResolve(report)} disabled={report.status === "resolved"}>
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Resolve Report
@@ -292,10 +279,6 @@ export function ReportsTable({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onAssign(report)} disabled={report.status === "resolved"}>
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Assign
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onResolve(report)} disabled={report.status === "resolved"}>
                       <CheckCircle className="w-4 h-4 mr-2" />
                       Resolve
@@ -323,11 +306,6 @@ export function ReportsTable({
               <div className="flex flex-wrap items-center gap-2">
                 <CategoryBadge category={report.category} />
                 <StatusBadge status={report.status} />
-                {report.region && (
-                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                    {report.region}
-                  </span>
-                )}
               </div>
 
               {/* Meta Row */}
@@ -347,20 +325,16 @@ export function ReportsTable({
                       {report.assignedToName}
                     </span>
                   ) : (
-                    showAssign ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-xs shrink-0"
-                        onClick={() => onAssign(report)}
-                        disabled={report.status === "resolved"}
-                      >
-                        <UserPlus className="w-3 h-3 mr-1" />
-                        Assign
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Unassigned</span>
-                    )
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs shrink-0"
+                      onClick={() => onAssign(report)}
+                      disabled={report.status === "resolved"}
+                    >
+                      <UserPlus className="w-3 h-3 mr-1" />
+                      Assign
+                    </Button>
                   )}
                 </div>
               </div>
