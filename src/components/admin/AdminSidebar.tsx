@@ -7,7 +7,8 @@ import {
   CheckSquare,
   ArrowLeft,
   Shield,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Gift
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard, end: true },
   { title: "Reports", url: "/admin/reports", icon: FileText },
+  { title: "Rewards", url: "/admin/rewards", icon: Gift },
   { title: "Pending Approvals", url: "/admin/approvals", icon: CheckSquare },
   // Example disabled item:
   // { title: "Audit Logs", url: "/admin/logs", icon: ScrollText, disabled: true },

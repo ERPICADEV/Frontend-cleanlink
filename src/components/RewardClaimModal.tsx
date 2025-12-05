@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Gift, CheckCircle2, X } from "lucide-react";
-import confetti from "canvas-confetti";
+import { Gift, CheckCircle2 } from "lucide-react";
+import * as confetti from "canvas-confetti";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import type { Reward } from "@/types/rewards";
@@ -29,7 +29,7 @@ export function RewardClaimModal({
       // Trigger confetti animation
       const duration = 3000;
       const animationEnd = Date.now() + duration;
-      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
 
       function randomInRange(min: number, max: number) {
         return Math.random() * (max - min) + min;
@@ -75,50 +75,41 @@ export function RewardClaimModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden">
-        <div className="relative bg-gradient-to-br from-primary/10 via-background to-background p-8 text-center">
-          {/* Close button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-4 right-4 h-8 w-8 rounded-full"
-            onClick={onClose}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+      <DialogContent className="sm:max-w-md overflow-hidden p-0">
+        <div className="relative bg-gradient-to-br from-primary/10 via-background to-background p-6 sm:p-8 text-center">
 
           {/* Reward Icon */}
-          <div className="mb-6 flex justify-center">
-            <div className="relative">
-              <div className="text-8xl animate-bounce">{icon}</div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <CheckCircle2 className="w-12 h-12 text-green-500 animate-scale-in" />
+          <div className="mb-4 sm:mb-6 flex justify-center">
+            <div className="relative w-32 h-32 sm:w-40 sm:h-40 flex items-center justify-center">
+              <div className="text-6xl sm:text-8xl animate-bounce">{icon}</div>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12 text-green-500 animate-scale-in" />
               </div>
             </div>
           </div>
 
           {/* Success Message */}
-          <h2 className="text-2xl font-bold mb-2 animate-fade-in">
+          <h2 className="text-xl sm:text-2xl font-bold mb-2 animate-fade-in">
             Reward Claimed!
           </h2>
-          <p className="text-lg font-semibold text-primary mb-1 animate-fade-in">
+          <p className="text-base sm:text-lg font-semibold text-primary mb-1 animate-fade-in">
             {reward.title}
           </p>
-          <p className="text-sm text-muted-foreground mb-6 animate-fade-in">
+          <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6 animate-fade-in line-clamp-2">
             {reward.description}
           </p>
 
           {/* Points Info */}
-          <div className="bg-card rounded-lg p-4 mb-4 border border-border animate-slide-up">
+          <div className="bg-card rounded-lg p-3 sm:p-4 mb-4 border border-border animate-slide-up">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">Points Deducted</span>
-              <span className="text-lg font-bold text-destructive">
+              <span className="text-xs sm:text-sm text-muted-foreground">Points Deducted</span>
+              <span className="text-base sm:text-lg font-bold text-destructive">
                 -{pointsDeducted}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">New Balance</span>
-              <span className="text-lg font-bold text-primary">
+              <span className="text-xs sm:text-sm text-muted-foreground">New Balance</span>
+              <span className="text-base sm:text-lg font-bold text-primary">
                 {newBalance}
               </span>
             </div>
@@ -129,6 +120,7 @@ export function RewardClaimModal({
             onClick={onClose}
             className="w-full animate-fade-in"
             disabled={isAnimating}
+            size="sm"
           >
             <Gift className="w-4 h-4 mr-2" />
             Continue
