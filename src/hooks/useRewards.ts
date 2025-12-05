@@ -8,7 +8,7 @@ interface UseRewardsResult {
   rewards: Reward[];
   loading: boolean;
   error: unknown;
-  redeem: (rewardId: string) => void;
+  redeem: (rewardId: string, onSuccess?: (reward: Reward, redemption: Redemption) => void) => void;
   isRedeeming: boolean;
 }
 
@@ -28,13 +28,9 @@ export const useRewards = (): UseRewardsResult => {
   const redeemMutation = useMutation({
     mutationFn: async (rewardId: string) => {
       const { data } = await apiClient.post<Redemption>(`/rewards/${rewardId}/redeem`, {});
-      return data;
+      return { redemption: data, rewardId };
     },
-    onSuccess: async () => {
-      toast({
-        title: "Reward claimed",
-        description: "Your reward redemption has been requested successfully.",
-      });
+    onSuccess: async (result) => {
       await refreshProfile();
       queryClient.invalidateQueries({ queryKey: ["rewards"] });
     },
@@ -64,7 +60,20 @@ export const useRewards = (): UseRewardsResult => {
     rewards: rewardsQuery.data ?? [],
     loading: rewardsQuery.isLoading,
     error: rewardsQuery.error,
-    redeem: (rewardId: string) => redeemMutation.mutate(rewardId),
+    redeem: (rewardId: string, onSuccess?: (reward: Reward, redemption: Redemption) => void) => {
+      redeemMutation.mutate(rewardId, {
+        onSuccess: async (result) => {
+          // Find the reward that was redeemed
+          const reward = rewardsQuery.data?.find((r) => r.id === rewardId);
+          if (reward && onSuccess) {
+            // Wait a bit for profile to refresh, then call callback
+            setTimeout(() => {
+              onSuccess(reward, result.redemption);
+            }, 100);
+          }
+        },
+      });
+    },
     isRedeeming: redeemMutation.isPending,
   };
 };

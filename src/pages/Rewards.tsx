@@ -1,11 +1,14 @@
-import { Gift, Lock, CheckCircle2 } from "lucide-react";
-import Navigation from "@/components/Navigation";
+import { useState } from "react";
+import { Gift, Lock } from "lucide-react";
+import Header from "@/components/Header";
+import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRewards } from "@/hooks/useRewards";
-import type { Reward } from "@/types/rewards";
+import { RewardClaimModal } from "@/components/RewardClaimModal";
+import type { Reward, Redemption } from "@/types/rewards";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const getRewardIcon = (reward: Reward) => {
@@ -17,27 +20,33 @@ const Rewards = () => {
   const { user } = useAuth();
   const { rewards, loading, error, redeem, isRedeeming } = useRewards();
   const userPoints = user?.civicPoints ?? 0;
+  
+  const [claimModalOpen, setClaimModalOpen] = useState(false);
+  const [claimedReward, setClaimedReward] = useState<Reward | null>(null);
+  const [pointsDeducted, setPointsDeducted] = useState(0);
+
+  const handleRedeem = (rewardId: string) => {
+    redeem(rewardId, (reward: Reward, redemption: Redemption) => {
+      setPointsDeducted(redemption.points_deducted);
+      setClaimedReward(reward);
+      setClaimModalOpen(true);
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
+    <div className="min-h-screen bg-background pb-16 md:pb-0">
+      <Header />
 
       <main className="container mx-auto px-4 py-6 max-w-4xl">
+        {/* Compact Points Display */}
         <div className="mb-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Gift className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold">Rewards & Perks</h1>
-          </div>
-          <p className="text-muted-foreground mb-4">
-            Redeem your Civil Points for exclusive eco-friendly rewards
-          </p>
           <Card className="p-4 bg-primary/5 border-primary/20">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Your Points</p>
                 <p className="text-2xl font-bold text-primary">{userPoints}</p>
               </div>
-              <Gift className="w-12 h-12 text-primary/20" />
+              <Gift className="w-10 h-10 text-primary/20" />
             </div>
           </Card>
         </div>
@@ -111,7 +120,7 @@ const Rewards = () => {
                           <Button
                             size="sm"
                             disabled={isRedeeming}
-                            onClick={() => redeem(reward.id)}
+                            onClick={() => handleRedeem(reward.id)}
                           >
                             {isRedeeming ? "Claiming..." : "Claim Now"}
                           </Button>
@@ -136,6 +145,20 @@ const Rewards = () => {
           </div>
         )}
       </main>
+
+      <BottomNav />
+
+      {/* Reward Claim Modal */}
+      <RewardClaimModal
+        open={claimModalOpen}
+        onClose={() => {
+          setClaimModalOpen(false);
+          setClaimedReward(null);
+        }}
+        reward={claimedReward}
+        pointsDeducted={pointsDeducted}
+        newBalance={userPoints}
+      />
     </div>
   );
 };
