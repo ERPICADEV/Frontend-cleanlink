@@ -41,6 +41,9 @@ interface AuthContextValue {
     password: string;
     username?: string;
     phone?: string;
+    region?: Record<string, unknown> | string;
+    bio?: string;
+    avatar_url?: string;
   }) => Promise<void>;
   logout: () => void;
   refreshProfile: () => Promise<AuthUser | null>;
@@ -177,11 +180,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       password,
       username,
       phone,
+      region,
+      bio,
+      avatar_url,
     }: {
       email: string;
       password: string;
       username?: string;
       phone?: string;
+      region?: Record<string, unknown> | string;
+      bio?: string;
+      avatar_url?: string;
     }) => {
       const { data } = await apiClient.post<{
         user: AuthUser;
@@ -192,6 +201,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         password,
         username,
         phone,
+        region,
+        bio,
+        avatar_url,
       });
 
       handleAuthResponse(data);

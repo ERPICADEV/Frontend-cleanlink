@@ -56,6 +56,16 @@ const PublicProfile = () => {
     );
   }
 
+  // Handle both camelCase and snake_case responses from backend
+  const avatarUrl = profile.avatarUrl ?? (profile as any).avatar_url ?? null;
+  const bio = profile.bio ?? (profile as any).bio ?? null;
+  const civicPoints = profile.civicPoints ?? (profile as any).civic_points ?? 0;
+  const civicLevel =
+    profile.level_info?.level ??
+    profile.civicLevel ??
+    (profile as any).civic_level ??
+    1;
+  const badges = profile.badges ?? (profile as any).badges ?? [];
   const regionLabel = profile.region ? formatLocationName(profile.region) : "Region not set";
 
   return (
@@ -79,9 +89,9 @@ const PublicProfile = () => {
             <Card className="p-6">
               <div className="flex items-start gap-4">
                 <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl font-bold text-primary flex-shrink-0 overflow-hidden">
-                  {profile.avatarUrl ? (
+                  {avatarUrl ? (
                     <img
-                      src={profile.avatarUrl}
+                      src={avatarUrl}
                       alt={profile.username || "User"}
                       className="w-full h-full object-cover"
                     />
@@ -89,41 +99,41 @@ const PublicProfile = () => {
                     <span>{(profile.username || "U").charAt(0).toUpperCase()}</span>
                   )}
                 </div>
-                <div className="flex-1">
-                  <h1 className="text-2xl font-bold mb-1">
-                    {profile.username || "Anonymous Citizen"}
-                  </h1>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {regionLabel}
-                  </p>
-                  {profile.badges && profile.badges.length > 0 && (
+                <div className="flex-1 space-y-2">
+                  <div>
+                    <h1 className="text-2xl font-bold leading-tight">
+                      {profile.username || "Anonymous Citizen"}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">{regionLabel}</p>
+                  </div>
+                  {badges && badges.length > 0 && (
                     <div className="flex flex-wrap gap-2">
-                      {profile.badges.map((badge) => (
+                      {badges.map((badge) => (
                         <Badge key={badge} variant="outline">
                           {badge}
                         </Badge>
                       ))}
                     </div>
                   )}
+                  {bio && (
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {bio}
+                    </p>
+                  )}
                 </div>
               </div>
-              {profile.bio && (
-                <p className="mt-4 text-sm text-muted-foreground whitespace-pre-wrap">
-                  {profile.bio}
-                </p>
-              )}
             </Card>
 
             <Card className="p-6">
               <h2 className="font-semibold mb-4">Civic Stats</h2>
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <p className="text-2xl font-bold">{profile.civicPoints ?? 0}</p>
+                  <p className="text-2xl font-bold">{civicPoints}</p>
                   <p className="text-xs text-muted-foreground">Civic Points</p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {profile.level_info?.level ?? profile.civicLevel ?? 1}
+                    {civicLevel}
                   </p>
                   <p className="text-xs text-muted-foreground">Level</p>
                 </div>

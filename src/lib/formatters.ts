@@ -53,11 +53,21 @@ export const formatStatusLabel = (status?: string) => {
     .join(" ");
 };
 
-export const formatLocationName = (location?: ReportLocation | RegionLocation | null) => {
+export const formatLocationName = (location?: ReportLocation | RegionLocation | string | null) => {
   if (!location) return "Unknown location";
+  
+  // Handle string input (e.g., from signup form)
+  if (typeof location === "string") {
+    return location;
+  }
   
   // Handle both ReportLocation and RegionLocation types
   const loc = location as ReportLocation | RegionLocation;
+  
+  // Check if it's an object before using 'in' operator
+  if (typeof loc !== "object" || loc === null) {
+    return "Unknown location";
+  }
   
   if ('area_name' in loc && loc.area_name) return loc.area_name;
   if ('address' in loc && loc.address) return loc.address;

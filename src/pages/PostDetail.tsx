@@ -48,6 +48,8 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   createComment,
@@ -191,6 +193,56 @@ const PostDetail = () => {
     }));
   }, [report]);
 
+  // Safely derive image-related data before any conditional returns to keep hook order stable
+  const imageUrl = report ? extractFirstImage(report.images) : undefined;
+  const resolutionPhotos = report?.resolutionPhotos || [];
+
+  // Combine all images for lightbox navigation
+  const allImages = useMemo(() => {
+    const images: { url: string; alt: string }[] = [];
+    if (imageUrl) {
+      images.push({ url: imageUrl, alt: report?.title || "Report image" });
+    }
+    resolutionPhotos.forEach((photo, index) => {
+      images.push({ url: photo, alt: `Resolved photo ${index + 1}` });
+    });
+    return images;
+  }, [imageUrl, resolutionPhotos, report?.title]);
+
+  const currentImage = selectedImageIndex !== null ? allImages[selectedImageIndex] : null;
+
+  const handleImageClick = (index: number) => {
+    setSelectedImageIndex(index);
+  };
+
+  const handleNextImage = () => {
+    if (selectedImageIndex !== null && selectedImageIndex < allImages.length - 1) {
+      setSelectedImageIndex(selectedImageIndex + 1);
+    }
+  };
+
+  const handlePrevImage = () => {
+    if (selectedImageIndex !== null && selectedImageIndex > 0) {
+      setSelectedImageIndex(selectedImageIndex - 1);
+    }
+  };
+
+  // Keyboard navigation for image lightbox
+  useEffect(() => {
+    if (selectedImageIndex === null) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft" && selectedImageIndex > 0) {
+        setSelectedImageIndex(selectedImageIndex - 1);
+      } else if (e.key === "ArrowRight" && selectedImageIndex < allImages.length - 1) {
+        setSelectedImageIndex(selectedImageIndex + 1);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedImageIndex, allImages.length]);
+
   const renderComments = (comments?: ReportComment[], depth = 0) => {
     if (!comments?.length) return null;
     return comments.map((comment) => (
@@ -243,7 +295,6 @@ const PostDetail = () => {
     );
   }
 
-  const imageUrl = extractFirstImage(report.images);
   const categoryLabel = formatCategoryLabel(report.category);
   const locationLabel = formatLocationName(report.location);
   const postedAgo = formatRelativeTime(report.createdAt);
@@ -251,53 +302,6 @@ const PostDetail = () => {
   const commentsCount = report.comments?.length ?? 0;
   const legitScore = report.aiScore?.legit ?? 0.5;
   const severityScore = report.aiScore?.severity ?? 0.5;
-  const resolutionPhotos = report.resolutionPhotos || [];
-  
-  // Combine all images for lightbox navigation
-  const allImages = useMemo(() => {
-    const images: { url: string; alt: string }[] = [];
-    if (imageUrl) {
-      images.push({ url: imageUrl, alt: report.title });
-    }
-    resolutionPhotos.forEach((photo, index) => {
-      images.push({ url: photo, alt: `Resolved photo ${index + 1}` });
-    });
-    return images;
-  }, [imageUrl, resolutionPhotos, report.title]);
-  
-  const currentImage = selectedImageIndex !== null ? allImages[selectedImageIndex] : null;
-  
-  const handleImageClick = (index: number) => {
-    setSelectedImageIndex(index);
-  };
-  
-  const handleNextImage = () => {
-    if (selectedImageIndex !== null && selectedImageIndex < allImages.length - 1) {
-      setSelectedImageIndex(selectedImageIndex + 1);
-    }
-  };
-  
-  const handlePrevImage = () => {
-    if (selectedImageIndex !== null && selectedImageIndex > 0) {
-      setSelectedImageIndex(selectedImageIndex - 1);
-    }
-  };
-  
-  // Keyboard navigation for image lightbox
-  useEffect(() => {
-    if (selectedImageIndex === null) return;
-    
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft" && selectedImageIndex > 0) {
-        setSelectedImageIndex(selectedImageIndex - 1);
-      } else if (e.key === "ArrowRight" && selectedImageIndex < allImages.length - 1) {
-        setSelectedImageIndex(selectedImageIndex + 1);
-      }
-    };
-    
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedImageIndex, allImages.length]);
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
@@ -584,6 +588,10 @@ const PostDetail = () => {
       {/* Image Lightbox Modal */}
       <Dialog open={selectedImageIndex !== null} onOpenChange={(open) => !open && setSelectedImageIndex(null)}>
         <DialogContent className="max-w-7xl w-full h-[90vh] p-0 bg-black/95 border-none [&>button]:hidden">
+          <DialogTitle className="sr-only">Image viewer</DialogTitle>
+          <DialogDescription className="sr-only">
+            Use arrow keys or on-screen controls to navigate images. Press close to exit.
+          </DialogDescription>
           {currentImage && (
             <div className="relative w-full h-full flex items-center justify-center">
               {/* Close Button */}
