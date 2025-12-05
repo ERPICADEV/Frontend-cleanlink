@@ -1,4 +1,4 @@
-import { Bell, User, MapPin, Settings, Shield } from "lucide-react";
+import { Bell, User, Settings, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -19,9 +19,11 @@ const Header = () => {
           className="flex items-center gap-2 cursor-pointer"
           onClick={() => navigate("/")}
         >
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-            <MapPin className="w-5 h-5 text-primary-foreground" />
-          </div>
+          <img 
+            src="/favicon.ico" 
+            alt="CleanLink Logo" 
+            className="w-8 h-8 flex-shrink-0"
+          />
           <span className="text-lg font-bold">CleanLink</span>
         </div>
 
