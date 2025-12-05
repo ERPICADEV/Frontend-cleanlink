@@ -57,6 +57,7 @@ import {
   type ReportComment,
   type ReportDetail,
   voteOnReport,
+  voteOnComment,
 } from "@/services/reportService";
 import {
   extractFirstImage,
@@ -85,6 +86,9 @@ const PostDetail = () => {
   const { isAuthenticated, user } = useAuth();
 
   const [commentText, setCommentText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState<Record<string, string>>({});
+  const [collapsedComments, setCollapsedComments] = useState<Set<string>>(new Set());
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
@@ -116,10 +120,34 @@ const PostDetail = () => {
     retry: 1,
   });
 
+  const [localUserVote, setLocalUserVote] = useState<number>(0);
+
+  // Update local user vote when report data changes
+  useEffect(() => {
+    if (report?.user_vote !== undefined) {
+      setLocalUserVote(report.user_vote);
+    }
+  }, [report?.user_vote]);
+
   const voteMutation = useMutation({
     mutationFn: (value: 1 | -1) => voteOnReport(id!, value),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["report", id] }),
+    onMutate: async (value) => {
+      // Optimistically update local user vote - allow toggling off
+      const newVote = localUserVote === value ? 0 : value;
+      setLocalUserVote(newVote);
+    },
+    onSuccess: (data) => {
+      // Update from server response
+      if (data?.user_vote !== undefined) {
+        setLocalUserVote(data.user_vote);
+      }
+      queryClient.invalidateQueries({ queryKey: ["report", id] });
+    },
     onError: () => {
+      // Revert on error
+      if (report?.user_vote !== undefined) {
+        setLocalUserVote(report.user_vote);
+      }
       toast({
         title: "Voting failed",
         description: "Try again after a moment.",
@@ -129,19 +157,44 @@ const PostDetail = () => {
   });
 
   const commentMutation = useMutation({
-    mutationFn: () => createComment(id!, { text: commentText }),
-    onSuccess: () => {
-      setCommentText("");
+    mutationFn: ({ text, parentId }: { text: string; parentId?: string }) =>
+      createComment(id!, { text, parent_comment_id: parentId }),
+    onSuccess: (_, variables) => {
+      if (variables.parentId) {
+        setReplyText((prev) => {
+          const newState = { ...prev };
+          delete newState[variables.parentId!];
+          return newState;
+        });
+        setReplyingTo(null);
+      } else {
+        setCommentText("");
+      }
       queryClient.invalidateQueries({ queryKey: ["report", id] });
       toast({
         title: "Comment posted",
-        description: "Thanks for adding more context!",
+        description: variables.parentId ? "Reply posted!" : "Thanks for adding more context!",
       });
     },
     onError: () => {
       toast({
         title: "Unable to comment",
         description: "Please try again or log in again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const commentVoteMutation = useMutation({
+    mutationFn: ({ commentId, value }: { commentId: string; value: 1 | -1 }) =>
+      voteOnComment(commentId, value),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["report", id] });
+    },
+    onError: () => {
+      toast({
+        title: "Voting failed",
+        description: "Try again after a moment.",
         variant: "destructive",
       });
     },
@@ -178,7 +231,70 @@ const PostDetail = () => {
       });
       return;
     }
-    commentMutation.mutate();
+    commentMutation.mutate({ text: commentText });
+  };
+
+  const handleReplySubmit = (parentId: string) => {
+    const replyTextValue = replyText[parentId]?.trim();
+    if (!replyTextValue) {
+      toast({
+        title: "Reply is empty",
+        description: "Please write something before posting.",
+        variant: "destructive",
+      });
+      return;
+    }
+    commentMutation.mutate({ text: replyTextValue, parentId });
+  };
+
+  const handleReplyClick = (commentId: string) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login required",
+        description: "Login to reply to comments.",
+        variant: "destructive",
+      });
+      navigate(`/login?redirect=/post/${id}`);
+      return;
+    }
+    setReplyingTo(commentId);
+    if (!replyText[commentId]) {
+      setReplyText((prev) => ({ ...prev, [commentId]: "" }));
+    }
+  };
+
+  const handleVoteComment = async (commentId: string, value: 1 | -1) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login required",
+        description: "Please login to vote on comments.",
+        variant: "destructive",
+      });
+      navigate(`/login?redirect=/post/${id}`);
+      return;
+    }
+    commentVoteMutation.mutate({ commentId, value });
+  };
+
+  const toggleCommentCollapse = (commentId: string) => {
+    setCollapsedComments((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(commentId)) {
+        newSet.delete(commentId);
+      } else {
+        newSet.add(commentId);
+      }
+      return newSet;
+    });
+  };
+
+  const getReplyCount = (comment: ReportComment): number => {
+    if (!comment.replies || comment.replies.length === 0) return 0;
+    let count = comment.replies.length;
+    comment.replies.forEach((reply) => {
+      count += getReplyCount(reply);
+    });
+    return count;
   };
 
   const timeline = useMemo(() => {
@@ -245,29 +361,119 @@ const PostDetail = () => {
 
   const renderComments = (comments?: ReportComment[], depth = 0) => {
     if (!comments?.length) return null;
-    return comments.map((comment) => (
-      <div key={comment.id} className={cn({ "ml-4": depth > 0 })}>
-        <CommentItem
-          id={comment.id}
-          username={comment.author?.username || "Anonymous"}
-          text={comment.text}
-          timestamp={comment.created_at ? formatRelativeTime(comment.created_at) : "Recently"}
-          updatedAt={comment.updated_at ? formatRelativeTime(comment.updated_at) : undefined}
-          authorId={comment.author?.id}
-          currentUserId={user?.id}
-          onUserClick={
-            comment.author?.id
-              ? () => navigate(`/user/${comment.author!.id}`)
-              : undefined
-          }
-          onEdit={commentActions.editComment}
-          onDelete={commentActions.deleteComment}
-          isEditing={commentActions.isEditingComment}
-          isDeleting={commentActions.isDeletingComment}
-        />
-        {renderComments(comment.replies, depth + 1)}
-      </div>
-    ));
+    return comments.map((comment, index) => {
+      const hasReplies = comment.replies && comment.replies.length > 0;
+      const isLast = index === comments.length - 1;
+      const isCollapsed = collapsedComments.has(comment.id);
+      const replyCount = hasReplies ? getReplyCount(comment) : 0;
+      
+      return (
+        <div key={comment.id} className={cn("relative", depth > 0 && "ml-8")}>
+          {/* Vertical line connecting to parent - Reddit style */}
+          {depth > 0 && (
+            <>
+              {/* Main vertical line - thinner and more subtle */}
+              <div 
+                className="absolute -left-8 top-0 w-[1px] bg-muted-foreground/30"
+                style={{ 
+                  height: isLast && !hasReplies ? '28px' : '100%',
+                  top: '28px'
+                }}
+              />
+              {/* Horizontal connector line - thinner */}
+              <div 
+                className="absolute -left-8 top-[28px] w-8 h-[1px] bg-muted-foreground/30"
+              />
+            </>
+          )}
+          
+          <div className="relative">
+            <CommentItem
+              id={comment.id}
+              username={comment.author?.username || "Anonymous"}
+              text={comment.text}
+              timestamp={comment.created_at || new Date().toISOString()}
+              updatedAt={comment.updated_at}
+              upvotes={comment.upvotes || 0}
+              downvotes={comment.downvotes || 0}
+              userVote={comment.user_vote || 0}
+              authorId={comment.author?.id}
+              currentUserId={user?.id}
+              depth={depth}
+              hasReplies={hasReplies}
+              replyCount={replyCount}
+              isCollapsed={isCollapsed}
+              onToggleCollapse={() => toggleCommentCollapse(comment.id)}
+              onUserClick={
+                comment.author?.id
+                  ? () => navigate(`/user/${comment.author!.id}`)
+                  : undefined
+              }
+              onReply={() => handleReplyClick(comment.id)}
+              onVote={handleVoteComment}
+              onEdit={commentActions.editComment}
+              onDelete={commentActions.deleteComment}
+              isEditing={commentActions.isEditingComment}
+              isDeleting={commentActions.isDeletingComment}
+            />
+            
+            {/* Reply input for this comment */}
+            {replyingTo === comment.id && !isCollapsed && (
+              <div className={cn("mb-4 mt-2 space-y-2", depth > 0 ? "ml-10" : "ml-12")}>
+                <Textarea
+                  placeholder="Write a reply..."
+                  rows={3}
+                  className="resize-none"
+                  value={replyText[comment.id] || ""}
+                  onChange={(e) =>
+                    setReplyText((prev) => ({ ...prev, [comment.id]: e.target.value }))
+                  }
+                  disabled={commentMutation.isPending}
+                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => handleReplySubmit(comment.id)}
+                    disabled={commentMutation.isPending || !replyText[comment.id]?.trim()}
+                  >
+                    {commentMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Posting...
+                      </>
+                    ) : (
+                      "Post Reply"
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setReplyingTo(null);
+                      setReplyText((prev) => {
+                        const newState = { ...prev };
+                        delete newState[comment.id];
+                        return newState;
+                      });
+                    }}
+                    disabled={commentMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* Render nested replies - only if not collapsed */}
+            {hasReplies && !isCollapsed && (
+              <div className="mt-1">
+                {renderComments(comment.replies, depth + 1)}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    });
   };
 
   if (isLoading) {
@@ -324,16 +530,29 @@ const PostDetail = () => {
             <div className="flex items-start gap-3">
               <div className="flex flex-col items-center gap-1 pt-1">
                 <button
-                  className="text-muted-foreground hover:text-primary transition-colors active:scale-95"
+                  className={cn(
+                    "transition-colors active:scale-95",
+                    localUserVote === 1 ? "text-primary" : "text-muted-foreground hover:text-primary"
+                  )}
                   aria-label="Upvote"
                   disabled={voteMutation.isPending}
                   onClick={() => handleVote(1)}
                 >
                   <ArrowUp className="w-6 h-6" />
                 </button>
-                <span className="text-lg font-bold">{report.upvotes}</span>
+                <span className={cn(
+                  "text-lg font-bold",
+                  localUserVote === 1 && "text-primary",
+                  localUserVote === -1 && "text-destructive",
+                  localUserVote === 0 && "text-muted-foreground"
+                )}>
+                  {localUserVote}
+                </span>
                 <button
-                  className="text-muted-foreground hover:text-destructive transition-colors active:scale-95"
+                  className={cn(
+                    "transition-colors active:scale-95",
+                    localUserVote === -1 ? "text-destructive" : "text-muted-foreground hover:text-destructive"
+                  )}
                   aria-label="Downvote"
                   disabled={voteMutation.isPending}
                   onClick={() => handleVote(-1)}

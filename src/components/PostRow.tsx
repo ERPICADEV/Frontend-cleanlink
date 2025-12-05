@@ -32,12 +32,16 @@ const PostRow = ({ post, onClick }: PostRowProps) => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
+  const currentUserVote = post.user_vote || 0;
+
   const voteMutation = useMutation({
     mutationFn: (value: 1 | -1) => voteOnReport(post.id, value),
     onMutate: async (value) => {
       await queryClient.cancelQueries({ queryKey: ['reports'] });
       
-      // Optimistic update only
+      // Optimistic update - allow toggling off
+      const newVote = currentUserVote === value ? 0 : value;
+      
       queryClient.setQueryData(['reports'], (old: any) => {
         if (!old?.pages) return old;
         
@@ -49,8 +53,7 @@ const PostRow = ({ post, onClick }: PostRowProps) => {
               report.id === post.id
                 ? {
                     ...report,
-                    upvotes: value === 1 ? report.upvotes + 1 : Math.max(0, report.upvotes),
-                    downvotes: value === -1 ? report.downvotes + 1 : Math.max(0, report.downvotes),
+                    user_vote: newVote,
                   }
                 : report
             ),
@@ -58,12 +61,12 @@ const PostRow = ({ post, onClick }: PostRowProps) => {
         };
       });
     },
-    // REMOVE THIS: Don't refetch all reports after voting!
-    // onSettled: () => {
-    //   queryClient.invalidateQueries({ queryKey: ['reports'] });
-    // },
+    onSuccess: () => {
+      // Refetch to get accurate vote counts
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+    },
     onError: (err, variables, context) => {
-      // Just refetch on error
+      // Revert on error
       queryClient.invalidateQueries({ queryKey: ['reports'] });
     },
   });
@@ -100,7 +103,8 @@ const PostRow = ({ post, onClick }: PostRowProps) => {
           <button 
             className={cn(
               "p-1.5 hover:bg-accent rounded transition-colors touch-manipulation",
-              voteMutation.isPending && "opacity-50 cursor-not-allowed"
+              voteMutation.isPending && "opacity-50 cursor-not-allowed",
+              currentUserVote === 1 && "text-primary"
             )}
             aria-label="Upvote"
             onClick={(e) => handleVote(1, e)}
@@ -108,11 +112,19 @@ const PostRow = ({ post, onClick }: PostRowProps) => {
           >
             <ChevronUp className="w-5 h-5" />
           </button>
-          <span className="text-sm font-semibold tabular-nums">{post.upvotes}</span>
+          <span className={cn(
+            "text-sm font-semibold tabular-nums",
+            currentUserVote === 1 && "text-primary",
+            currentUserVote === -1 && "text-destructive",
+            currentUserVote === 0 && "text-muted-foreground"
+          )}>
+            {currentUserVote}
+          </span>
           <button 
             className={cn(
               "p-1.5 hover:bg-accent rounded transition-colors touch-manipulation",
-              voteMutation.isPending && "opacity-50 cursor-not-allowed"
+              voteMutation.isPending && "opacity-50 cursor-not-allowed",
+              currentUserVote === -1 && "text-destructive"
             )}
             aria-label="Downvote"
             onClick={(e) => handleVote(-1, e)}

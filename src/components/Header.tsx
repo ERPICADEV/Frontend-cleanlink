@@ -1,11 +1,13 @@
-import { Bell, User, MapPin, Settings } from "lucide-react";
+import { Bell, User, MapPin, Settings, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useAdmin } from "@/hooks/useAdmin";
 
 const Header = () => {
   const navigate = useNavigate();
   const { unreadCount } = useNotifications();
+  const { isAdmin, isSuperAdmin } = useAdmin();
 
   const showBadge = (unreadCount ?? 0) > 0;
 
@@ -25,6 +27,17 @@ const Header = () => {
 
         {/* Right Actions */}
         <div className="flex items-center gap-1 sm:gap-2">
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full"
+              onClick={() => navigate(isSuperAdmin ? "/admin" : "/field-admin")}
+              title={isSuperAdmin ? "Admin Dashboard" : "Field Admin Dashboard"}
+            >
+              <Shield className="w-5 h-5" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"

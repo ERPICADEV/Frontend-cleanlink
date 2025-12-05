@@ -27,6 +27,7 @@ export interface ReportSummary {
   reporterDisplay: string;
   comments_count: number;
   description_preview: string;
+  user_vote?: number;
 }
 
 export interface CommentAuthor {
@@ -40,6 +41,9 @@ export interface ReportComment {
   text: string;
   author: CommentAuthor;
   parent_comment_id?: string | null;
+  upvotes?: number;
+  downvotes?: number;
+  user_vote?: number;
   created_at: string;
   updated_at: string;
   replies?: ReportComment[];
@@ -81,6 +85,7 @@ export interface ReportDetail extends ReportSummary {
   mcdVerifiedBy?: string | null;
   resolutionPhotos?: string[];
   resolutionDetails?: string | null;
+  user_vote?: number;
 }
 
 export interface ReportListResponse {
@@ -205,6 +210,18 @@ export const fetchUserComments = async (params?: {
   const { data } = await apiClient.get<UserCommentsResponse>("/users/me/comments", {
     params,
   });
+  return data;
+};
+
+export interface CommentVoteResponse {
+  comment_id: string;
+  upvotes: number;
+  downvotes: number;
+  user_vote: number;
+}
+
+export const voteOnComment = async (commentId: string, value: 1 | -1) => {
+  const { data } = await apiClient.post<CommentVoteResponse>(`/reports/comments/${commentId}/vote`, { value });
   return data;
 };
 

@@ -6,6 +6,7 @@ import type {
   AuditLog, 
   AdminUser as AdminUserType
 } from "@/types/admin";
+import type { Reward } from "@/types/rewards";
 
 // Define types locally if not exported from admin types
 export type ProgressStatus = "not_started" | "in_progress" | "completed" | "on_hold";
@@ -224,6 +225,44 @@ export const fetchAdminStats = async (): Promise<AdminStats> => {
     reportsByCategory: {},
     recentActivity: [],
   };
+};
+
+// Reward Management Functions
+export interface CreateRewardPayload {
+  key: string;
+  title: string;
+  description: string;
+  required_points: number;
+  available_from?: string | null;
+  available_until?: string | null;
+  max_per_user?: number;
+  metadata?: Record<string, any>;
+}
+
+export interface UpdateRewardPayload extends Partial<CreateRewardPayload> {}
+
+// GET /api/v1/rewards/admin/all
+export const fetchAllRewards = async (): Promise<Reward[]> => {
+  const { data } = await apiClient.get<{ data: Reward[] }>("/rewards/admin/all");
+  return data.data || [];
+};
+
+// POST /api/v1/rewards
+export const createReward = async (payload: CreateRewardPayload): Promise<Reward> => {
+  const { data } = await apiClient.post<Reward>("/rewards", payload);
+  return data;
+};
+
+// PATCH /api/v1/rewards/:id
+export const updateReward = async (rewardId: string, payload: UpdateRewardPayload): Promise<Reward> => {
+  const { data } = await apiClient.patch<Reward>(`/rewards/${rewardId}`, payload);
+  return data;
+};
+
+// DELETE /api/v1/rewards/:id
+export const deleteReward = async (rewardId: string): Promise<{ message: string }> => {
+  const { data } = await apiClient.delete<{ message: string }>(`/rewards/${rewardId}`);
+  return data;
 };
 
 
