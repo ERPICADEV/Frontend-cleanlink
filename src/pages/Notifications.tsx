@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Bell, MessageSquare, Award, CheckCircle2 } from "lucide-react";
@@ -7,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatRelative } from "date-fns";
 
 const Notifications = () => {
+  const navigate = useNavigate();
   const {
     notifications,
     loading,
@@ -14,7 +16,36 @@ const Notifications = () => {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
+    markAsRead,
   } = useNotifications();
+
+  const handleNotificationClick = (notification: typeof notifications[0]) => {
+    // Mark as read if unread
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+
+    // Navigate based on notification data
+    if (notification.data) {
+      // Handle report-related notifications
+      if (notification.data.reportId) {
+        navigate(`/post/${notification.data.reportId}`);
+        return;
+      }
+      // Handle comment-related notifications
+      if (notification.data.commentId && notification.data.reportId) {
+        navigate(`/post/${notification.data.reportId}`);
+        return;
+      }
+      // Handle reward-related notifications
+      if (notification.type === "reward" && notification.data.rewardId) {
+        navigate("/rewards");
+        return;
+      }
+    }
+
+    // For other notification types, just mark as read (no navigation)
+  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -98,6 +129,7 @@ const Notifications = () => {
             return (
               <div
                 key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
                 className={cn(
                   "p-4 hover:bg-accent/50 transition-colors cursor-pointer",
                   !notification.isRead && "bg-accent/30"

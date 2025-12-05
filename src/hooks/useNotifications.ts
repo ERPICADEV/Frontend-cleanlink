@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
 import type { Notification, NotificationsResponse } from "@/types/notifications";
 
@@ -6,6 +6,8 @@ const NOTIFICATIONS_PAGE_SIZE = 20;
 const POLL_INTERVAL_MS = 30_000;
 
 export const useNotifications = () => {
+  const queryClient = useQueryClient();
+
   const notificationsQuery = useInfiniteQuery<NotificationsResponse>({
     queryKey: ["notifications"],
     initialPageParam: undefined as string | undefined,
@@ -37,6 +39,56 @@ export const useNotifications = () => {
     refetchInterval: POLL_INTERVAL_MS,
   });
 
+  // Mutation to mark notification as read
+  const markAsReadMutation = useMutation({
+    mutationFn: async (notificationId: string) => {
+      const { data } = await apiClient.patch<{ id: string; isRead: boolean }>(
+        `/notifications/${notificationId}/read`
+      );
+      return data;
+    },
+    onMutate: async (notificationId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["notifications"] });
+
+      // Snapshot previous value for infinite query
+      const previousData = queryClient.getQueriesData({ queryKey: ["notifications"] });
+
+      // Optimistically update the infinite query cache
+      queryClient.setQueriesData(
+        { queryKey: ["notifications"] },
+        (old: any) => {
+          if (!old || !old.pages) return old;
+
+          return {
+            ...old,
+            pages: old.pages.map((page: NotificationsResponse) => ({
+              ...page,
+              data: page.data.map((notif) =>
+                notif.id === notificationId ? { ...notif, isRead: true } : notif
+              ),
+            })),
+          };
+        }
+      );
+
+      return { previousData };
+    },
+    onError: (err, notificationId, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
+    onSettled: () => {
+      // Refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
+    },
+  });
+
   const notifications: Notification[] =
     notificationsQuery.data?.pages.flatMap((page) => page.data) ?? [];
 
@@ -48,6 +100,8 @@ export const useNotifications = () => {
     fetchNextPage: notificationsQuery.fetchNextPage,
     hasNextPage: notificationsQuery.hasNextPage,
     isFetchingNextPage: notificationsQuery.isFetchingNextPage,
+    markAsRead: (notificationId: string) => markAsReadMutation.mutate(notificationId),
+    isMarkingAsRead: markAsReadMutation.isPending,
     refetch: () => {
       notificationsQuery.refetch();
       unreadCountQuery.refetch();
