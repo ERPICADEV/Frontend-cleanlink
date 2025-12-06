@@ -3,11 +3,8 @@ import { cn } from "@/lib/utils";
 import { extractFirstImage, formatCategoryLabel, formatLocationName, formatRelativeTime } from "@/lib/formatters";
 import StatusPill from "@/components/StatusPill";
 import type { ReportSummary } from "@/services/reportService";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { voteOnReport } from "@/services/reportService";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useVote, type VoteState, type VoteValue } from "@/hooks/useVote";
 
 interface PostRowProps {
   post: ReportSummary;
@@ -27,64 +24,62 @@ const getCategoryTone = (category?: string) => {
 };
 
 const PostRow = ({ post, onClick }: PostRowProps) => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+  const voteState: VoteState = {
+    upvotes: post.upvotes || 0,
+    downvotes: post.downvotes || 0,
+    userVote: (post.user_vote as 1 | -1 | 0) || 0,
+  };
 
-  const currentUserVote = post.user_vote || 0;
-
-  const voteMutation = useMutation({
-    mutationFn: (value: 1 | -1) => voteOnReport(post.id, value),
-    onMutate: async (value) => {
-      await queryClient.cancelQueries({ queryKey: ['reports'] });
-      
-      // Optimistic update - allow toggling off
-      const newVote = currentUserVote === value ? 0 : value;
-      
-      queryClient.setQueryData(['reports'], (old: any) => {
-        if (!old?.pages) return old;
-        
-        return {
-          ...old,
-          pages: old.pages.map((page: any) => ({
-            ...page,
-            data: page.data.map((report: any) =>
-              report.id === post.id
-                ? {
-                    ...report,
-                    user_vote: newVote,
-                  }
-                : report
-            ),
-          })),
-        };
-      });
+  const { handleVote, isVoting, currentState } = useVote({
+    entityId: post.id,
+    currentState: voteState,
+    voteFn: voteOnReport,
+    queryKey: ['reports'],
+    getCurrentState: (data: any) => {
+      // Find the post in the infinite query pages
+      if (data?.pages) {
+        for (const page of data.pages) {
+          const report = page.data?.find((r: any) => r.id === post.id);
+          if (report) {
+            return {
+              upvotes: report.upvotes || 0,
+              downvotes: report.downvotes || 0,
+              userVote: ((report.user_vote === 1 || report.user_vote === -1 || report.user_vote === 0) ? report.user_vote : 0) as VoteValue,
+            };
+          }
+        }
+      }
+      // Fallback to prop state
+      return voteState;
     },
-    onSuccess: () => {
-      // Refetch to get accurate vote counts
-      queryClient.invalidateQueries({ queryKey: ['reports'] });
+    updateCache: (old: any, result) => {
+      if (!old?.pages) return old;
+      return {
+        ...old,
+        pages: old.pages.map((page: any) => ({
+          ...page,
+          data: page.data.map((report: any) =>
+            report.id === post.id
+              ? {
+                  ...report,
+                  upvotes: result.newUpvotes,
+                  downvotes: result.newDownvotes,
+                  user_vote: result.newUserVote,
+                }
+              : report
+          ),
+        })),
+      };
     },
-    onError: (err, variables, context) => {
-      // Revert on error
-      queryClient.invalidateQueries({ queryKey: ['reports'] });
-    },
+    authRedirect: '/login?redirect=/',
   });
 
-  const handleVote = (value: 1 | -1, e: React.MouseEvent) => {
+  const currentUserVote = currentState.userVote;
+  const netVoteCount = currentState.upvotes - currentState.downvotes;
+
+  const handleVoteClick = (value: 1 | -1, e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    if (!isAuthenticated) {
-      toast({
-        title: "Login required",
-        description: "Please login to vote on reports",
-        variant: "destructive",
-      });
-      navigate(`/login?redirect=/`);
-      return;
-    }
-    
-    voteMutation.mutate(value);
+    handleVote(value);
   };
 
   const imageUrl = extractFirstImage(post.images);
@@ -102,35 +97,37 @@ const PostRow = ({ post, onClick }: PostRowProps) => {
         <div className="flex flex-col items-center gap-0.5 pt-1 w-10 flex-shrink-0">
           <button 
             className={cn(
-              "p-1.5 hover:bg-accent rounded transition-colors touch-manipulation",
-              voteMutation.isPending && "opacity-50 cursor-not-allowed",
-              currentUserVote === 1 && "text-primary"
+              "p-1.5 hover:bg-accent rounded transition-all duration-200 touch-manipulation",
+              "active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+              isVoting && "opacity-50 cursor-not-allowed",
+              currentUserVote === 1 && "text-primary bg-primary/10"
             )}
-            aria-label="Upvote"
-            onClick={(e) => handleVote(1, e)}
-            disabled={voteMutation.isPending}
+            aria-label={currentUserVote === 1 ? "Remove upvote" : "Upvote"}
+            onClick={(e) => handleVoteClick(1, e)}
+            disabled={isVoting}
           >
-            <ChevronUp className="w-5 h-5" />
+            <ChevronUp className={cn("w-5 h-5 transition-transform", currentUserVote === 1 && "scale-110")} />
           </button>
           <span className={cn(
-            "text-sm font-semibold tabular-nums",
+            "text-sm font-semibold tabular-nums transition-colors duration-200",
             currentUserVote === 1 && "text-primary",
             currentUserVote === -1 && "text-destructive",
             currentUserVote === 0 && "text-muted-foreground"
           )}>
-            {currentUserVote}
+            {netVoteCount}
           </span>
           <button 
             className={cn(
-              "p-1.5 hover:bg-accent rounded transition-colors touch-manipulation",
-              voteMutation.isPending && "opacity-50 cursor-not-allowed",
-              currentUserVote === -1 && "text-destructive"
+              "p-1.5 hover:bg-accent rounded transition-all duration-200 touch-manipulation",
+              "active:scale-95 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2",
+              isVoting && "opacity-50 cursor-not-allowed",
+              currentUserVote === -1 && "text-destructive bg-destructive/10"
             )}
-            aria-label="Downvote"
-            onClick={(e) => handleVote(-1, e)}
-            disabled={voteMutation.isPending}
+            aria-label={currentUserVote === -1 ? "Remove downvote" : "Downvote"}
+            onClick={(e) => handleVoteClick(-1, e)}
+            disabled={isVoting}
           >
-            <ChevronDown className="w-5 h-5" />
+            <ChevronDown className={cn("w-5 h-5 transition-transform", currentUserVote === -1 && "scale-110")} />
           </button>
         </div>
 

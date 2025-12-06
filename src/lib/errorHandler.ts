@@ -71,7 +71,7 @@ export function handleApiError(
       const fieldErrors = Object.values(backendError.fields);
       if (fieldErrors.length > 0) {
         // Return the first field error message as fallback
-        return fieldErrors[0];
+        return String(fieldErrors[0]);
       }
     }
 

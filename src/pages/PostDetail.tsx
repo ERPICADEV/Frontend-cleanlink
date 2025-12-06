@@ -69,6 +69,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCommentActions } from "@/hooks/useCommentActions";
 import { useReportActions } from "@/hooks/useReportActions";
+import { useVote, type VoteState, type VoteValue, calculateVoteChange } from "@/hooks/useVote";
 import { cn } from "@/lib/utils";
 
 const statusSteps = [
@@ -118,42 +119,40 @@ const PostDetail = () => {
     queryFn: () => fetchReportDetail(id!),
     enabled: Boolean(id),
     retry: 1,
+    // Prevent unnecessary refetches that cause flicker
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
-  const [localUserVote, setLocalUserVote] = useState<number>(0);
+  // Use the vote hook for report voting
+  const reportVoteState: VoteState = report ? {
+    upvotes: report.upvotes || 0,
+    downvotes: report.downvotes || 0,
+    userVote: ((report.user_vote === 1 || report.user_vote === -1 || report.user_vote === 0) ? report.user_vote : 0) as VoteValue,
+  } : { upvotes: 0, downvotes: 0, userVote: 0 as const };
 
-  // Update local user vote when report data changes
-  useEffect(() => {
-    if (report?.user_vote !== undefined) {
-      setLocalUserVote(report.user_vote);
-    }
-  }, [report?.user_vote]);
-
-  const voteMutation = useMutation({
-    mutationFn: (value: 1 | -1) => voteOnReport(id!, value),
-    onMutate: async (value) => {
-      // Optimistically update local user vote - allow toggling off
-      const newVote = localUserVote === value ? 0 : value;
-      setLocalUserVote(newVote);
+  const { handleVote: handleReportVote, isVoting: isVotingReport, currentState: reportVoteStateCurrent } = useVote({
+    entityId: id!,
+    currentState: reportVoteState,
+    voteFn: voteOnReport,
+    queryKey: ["report", id],
+    getCurrentState: (data: any) => ({
+      upvotes: data.upvotes || 0,
+      downvotes: data.downvotes || 0,
+      userVote: ((data.user_vote === 1 || data.user_vote === -1 || data.user_vote === 0) ? data.user_vote : 0) as VoteValue,
+    }),
+    updateCache: (old: any, result) => {
+      if (!old) return old;
+      return {
+        ...old,
+        upvotes: result.newUpvotes,
+        downvotes: result.newDownvotes,
+        user_vote: result.newUserVote,
+      };
     },
-    onSuccess: (data) => {
-      // Update from server response
-      if (data?.user_vote !== undefined) {
-        setLocalUserVote(data.user_vote);
-      }
-      queryClient.invalidateQueries({ queryKey: ["report", id] });
-    },
-    onError: () => {
-      // Revert on error
-      if (report?.user_vote !== undefined) {
-        setLocalUserVote(report.user_vote);
-      }
-      toast({
-        title: "Voting failed",
-        description: "Try again after a moment.",
-        variant: "destructive",
-      });
-    },
+    requireAuth: true,
+    authRedirect: `/login?redirect=/post/${id}`,
   });
 
   const commentMutation = useMutation({
@@ -185,13 +184,161 @@ const PostDetail = () => {
     },
   });
 
+  // Helper function to find a comment by ID in nested structure
+  const findCommentById = (comments: any[], commentId: string): any => {
+    for (const c of comments) {
+      if (c.id === commentId) return c;
+      if (c.replies) {
+        const found = findCommentById(c.replies, commentId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // Helper function to update a comment by ID in nested structure
+  const updateCommentById = (comments: any[], commentId: string, updater: (c: any) => any): any[] => {
+    return comments.map((c: any) => {
+      if (c.id === commentId) {
+        return updater(c);
+      }
+      if (c.replies) {
+        return { ...c, replies: updateCommentById(c.replies, commentId, updater) };
+      }
+      return c;
+    });
+  };
+
+  // Comment voting handler using mutation
   const commentVoteMutation = useMutation({
     mutationFn: ({ commentId, value }: { commentId: string; value: 1 | -1 }) =>
       voteOnComment(commentId, value),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["report", id] });
+    onMutate: async ({ commentId, value }) => {
+      await queryClient.cancelQueries({ queryKey: ["report", id] });
+      const previousReport = queryClient.getQueryData(["report", id]);
+
+      // Read current state from cache (most current, includes any previous optimistic updates)
+      const cachedReport = queryClient.getQueryData(["report", id]) as any;
+      if (!cachedReport?.comments) {
+        return { previousReport, expectedUserVote: null };
+      }
+
+      const comment = findCommentById(cachedReport.comments, commentId);
+      if (!comment) {
+        return { previousReport, expectedUserVote: null };
+      }
+
+      // Get current vote state from cache (source of truth)
+      const currentVoteState: VoteState = {
+        upvotes: comment.upvotes || 0,
+        downvotes: comment.downvotes || 0,
+        userVote: ((comment.user_vote === 1 || comment.user_vote === -1 || comment.user_vote === 0) 
+          ? comment.user_vote 
+          : 0) as VoteValue,
+      };
+
+      // Calculate expected final state after vote
+      const voteChange = calculateVoteChange(currentVoteState, value);
+      const expectedUserVote: VoteValue = voteChange.newUserVote;
+
+      // Apply optimistic update ONCE - replace state, don't add deltas
+      queryClient.setQueryData(["report", id], (old: any) => {
+        if (!old?.comments) return old;
+
+        // Verify we're updating the same comment we calculated for
+        const currentComment = findCommentById(old.comments, commentId);
+        if (!currentComment) return old;
+
+        // Only update if the comment's current state matches what we calculated from
+        // This prevents double updates if onSuccess runs before onMutate completes
+        const currentState: VoteState = {
+          upvotes: currentComment.upvotes || 0,
+          downvotes: currentComment.downvotes || 0,
+          userVote: ((currentComment.user_vote === 1 || currentComment.user_vote === -1 || currentComment.user_vote === 0) 
+            ? currentComment.user_vote 
+            : 0) as VoteValue,
+        };
+
+        // If state has changed since we calculated, skip optimistic update
+        // (This means another update already happened)
+        if (currentState.userVote !== currentVoteState.userVote ||
+            currentState.upvotes !== currentVoteState.upvotes ||
+            currentState.downvotes !== currentVoteState.downvotes) {
+          return old;
+        }
+
+        // Apply optimistic update - REPLACE values, don't add
+        return {
+          ...old,
+          comments: updateCommentById(old.comments, commentId, () => ({
+            ...currentComment,
+            upvotes: voteChange.newUpvotes,
+            downvotes: voteChange.newDownvotes,
+            user_vote: voteChange.newUserVote,
+          })),
+        };
+      });
+
+      return { previousReport, expectedUserVote, commentId };
     },
-    onError: () => {
+    onSuccess: (data, variables, context) => {
+      // Reconciliation: Only update if server response differs from optimistic update
+      // This prevents flicker by skipping updates when optimistic update was correct
+      queryClient.setQueryData(["report", id], (old: any) => {
+        if (!old?.comments) return old;
+
+        const comment = findCommentById(old.comments, data.comment_id);
+        if (!comment) return old;
+
+        // Get current state (after optimistic update)
+        const currentUserVote: VoteValue = ((comment.user_vote === 1 || comment.user_vote === -1 || comment.user_vote === 0) 
+          ? comment.user_vote 
+          : 0) as VoteValue;
+        const serverUserVote: VoteValue = ((data.user_vote === 1 || data.user_vote === -1 || data.user_vote === 0) 
+          ? data.user_vote 
+          : 0) as VoteValue;
+
+        // Strict comparison: check if optimistic update exactly matches server response
+        const optimisticWasCorrect = 
+          context?.expectedUserVote === serverUserVote &&
+          currentUserVote === serverUserVote &&
+          Number(comment.upvotes) === Number(data.upvotes) &&
+          Number(comment.downvotes) === Number(data.downvotes);
+
+        // If optimistic update was correct, return EXACT same object to prevent any re-render
+        if (optimisticWasCorrect) {
+          return old; // Same reference = no re-render = no flicker
+        }
+
+        // Server response differs - check if values actually changed
+        const valuesChanged = 
+          Number(comment.upvotes) !== Number(data.upvotes) ||
+          Number(comment.downvotes) !== Number(data.downvotes) ||
+          comment.user_vote !== data.user_vote;
+
+        // If no actual change, return same object to prevent flicker
+        if (!valuesChanged) {
+          return old;
+        }
+
+        // Only create new object if values actually changed
+        // This ensures minimal re-renders
+        return {
+          ...old,
+          comments: updateCommentById(old.comments, data.comment_id, () => ({
+            ...comment,
+            upvotes: data.upvotes,
+            downvotes: data.downvotes,
+            user_vote: data.user_vote,
+          })),
+        };
+      });
+    },
+    onError: (err, variables, context) => {
+      // Revert on error
+      if (context?.previousReport) {
+        queryClient.setQueryData(["report", id], context.previousReport);
+      }
       toast({
         title: "Voting failed",
         description: "Try again after a moment.",
@@ -201,16 +348,7 @@ const PostDetail = () => {
   });
 
   const handleVote = (value: 1 | -1) => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Login required",
-        description: "Please login to vote on reports.",
-        variant: "destructive",
-      });
-      navigate(`/login?redirect=/post/${id}`);
-      return;
-    }
-    voteMutation.mutate(value);
+    handleReportVote(value);
   };
 
   const handleCommentSubmit = () => {
@@ -531,33 +669,33 @@ const PostDetail = () => {
               <div className="flex flex-col items-center gap-1 pt-1">
                 <button
                   className={cn(
-                    "transition-colors active:scale-95",
-                    localUserVote === 1 ? "text-primary" : "text-muted-foreground hover:text-primary"
+                    "transition-all duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded",
+                    reportVoteStateCurrent.userVote === 1 ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"
                   )}
-                  aria-label="Upvote"
-                  disabled={voteMutation.isPending}
+                  aria-label={reportVoteStateCurrent.userVote === 1 ? "Remove upvote" : "Upvote"}
+                  disabled={isVotingReport}
                   onClick={() => handleVote(1)}
                 >
-                  <ArrowUp className="w-6 h-6" />
+                  <ArrowUp className={cn("w-6 h-6 transition-transform", reportVoteStateCurrent.userVote === 1 && "scale-110")} />
                 </button>
                 <span className={cn(
-                  "text-lg font-bold",
-                  localUserVote === 1 && "text-primary",
-                  localUserVote === -1 && "text-destructive",
-                  localUserVote === 0 && "text-muted-foreground"
+                  "text-lg font-bold transition-colors duration-200",
+                  reportVoteStateCurrent.userVote === 1 && "text-primary",
+                  reportVoteStateCurrent.userVote === -1 && "text-destructive",
+                  reportVoteStateCurrent.userVote === 0 && "text-muted-foreground"
                 )}>
-                  {localUserVote}
+                  {reportVoteStateCurrent.upvotes - reportVoteStateCurrent.downvotes}
                 </span>
                 <button
                   className={cn(
-                    "transition-colors active:scale-95",
-                    localUserVote === -1 ? "text-destructive" : "text-muted-foreground hover:text-destructive"
+                    "transition-all duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2 rounded",
+                    reportVoteStateCurrent.userVote === -1 ? "text-destructive bg-destructive/10" : "text-muted-foreground hover:text-destructive"
                   )}
-                  aria-label="Downvote"
-                  disabled={voteMutation.isPending}
+                  aria-label={reportVoteStateCurrent.userVote === -1 ? "Remove downvote" : "Downvote"}
+                  disabled={isVotingReport}
                   onClick={() => handleVote(-1)}
                 >
-                  <ArrowDown className="w-6 h-6" />
+                  <ArrowDown className={cn("w-6 h-6 transition-transform", reportVoteStateCurrent.userVote === -1 && "scale-110")} />
                 </button>
               </div>
 

@@ -43,15 +43,6 @@ const queryClient = new QueryClient({
         return failureCount < 2;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-      // Suppress error logging for expected 401s (when user is not logged in)
-      onError: (error: any) => {
-        // Only log non-401 errors to console
-        if (error?.status !== 401) {
-          // Let React Query handle the error normally
-          return;
-        }
-        // Silently handle 401 errors - they're expected when user is not logged in
-      },
     },
     mutations: {
       retry: (failureCount, error: any) => {

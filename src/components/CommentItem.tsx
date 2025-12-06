@@ -84,11 +84,25 @@ const CommentItem = ({
   const [displayTime, setDisplayTime] = useState(formatRelativeTime(timestamp));
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Update local state when props change
+  // Update local state when props change - use ref to track previous values
+  // This prevents flicker by only updating when values actually change
+  const prevValuesRef = useRef({ upvotes, downvotes, userVote });
+  
   useEffect(() => {
-    setLocalUpvotes(upvotes);
-    setLocalDownvotes(downvotes);
-    setLocalUserVote(userVote);
+    const prev = prevValuesRef.current;
+    // Only update if values actually changed
+    if (prev.upvotes !== upvotes) {
+      setLocalUpvotes(upvotes);
+      prevValuesRef.current.upvotes = upvotes;
+    }
+    if (prev.downvotes !== downvotes) {
+      setLocalDownvotes(downvotes);
+      prevValuesRef.current.downvotes = downvotes;
+    }
+    if (prev.userVote !== userVote) {
+      setLocalUserVote(userVote);
+      prevValuesRef.current.userVote = userVote;
+    }
   }, [upvotes, downvotes, userVote]);
 
   // Update timestamp display every minute for real-time updates
@@ -162,55 +176,12 @@ const CommentItem = ({
     
     setIsVoting(true);
     try {
-      // Optimistic update
-      let newUpvotes = localUpvotes;
-      let newDownvotes = localDownvotes;
-      let newUserVote: number;
-
-      if (localUserVote === value) {
-        // User clicked the same vote button - toggle off (remove vote, set to 0)
-        // Remove the vote
-        if (value === 1) {
-          newUpvotes = Math.max(0, localUpvotes - 1);
-        } else {
-          newDownvotes = Math.max(0, localDownvotes - 1);
-        }
-        newUserVote = 0;
-      } else if (localUserVote !== 0) {
-        // Changing vote
-        // Remove old vote
-        if (localUserVote === 1) {
-          newUpvotes = Math.max(0, localUpvotes - 1);
-        } else {
-          newDownvotes = Math.max(0, localDownvotes - 1);
-        }
-        // Add new vote
-        if (value === 1) {
-          newUpvotes = newUpvotes + 1;
-        } else {
-          newDownvotes = newDownvotes + 1;
-        }
-        newUserVote = value;
-      } else {
-        // New vote
-        if (value === 1) {
-          newUpvotes = localUpvotes + 1;
-        } else {
-          newDownvotes = localDownvotes + 1;
-        }
-        newUserVote = value;
-      }
-      
-      setLocalUpvotes(newUpvotes);
-      setLocalDownvotes(newDownvotes);
-      setLocalUserVote(newUserVote);
-      
+      // Let the parent mutation handle optimistic updates
+      // This component just calls onVote and syncs with props via useEffect
       await onVote(id, value);
     } catch (error) {
-      // Revert on error
-      setLocalUpvotes(upvotes);
-      setLocalDownvotes(downvotes);
-      setLocalUserVote(userVote);
+      // Error handling is done in the parent mutation
+      console.error('Vote error:', error);
     } finally {
       setIsVoting(false);
     }
@@ -244,33 +215,33 @@ const CommentItem = ({
         <div className="flex flex-col items-center gap-0.5 pt-1 flex-shrink-0">
           <button
             className={cn(
-              "transition-colors active:scale-95 p-0.5 rounded",
-              localUserVote === 1 ? "text-primary" : "text-muted-foreground hover:text-primary"
+              "transition-all duration-200 active:scale-95 p-0.5 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
+              localUserVote === 1 ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"
             )}
-            aria-label="Upvote"
+            aria-label={localUserVote === 1 ? "Remove upvote" : "Upvote"}
             disabled={isVoting || disabled || !onVote}
             onClick={() => handleVote(1)}
           >
-            <ArrowUp className="w-4 h-4" />
+            <ArrowUp className={cn("w-4 h-4 transition-transform", localUserVote === 1 && "scale-110")} />
           </button>
           <span className={cn(
-            "text-xs font-medium min-w-[2ch] text-center leading-none",
+            "text-xs font-medium min-w-[2ch] text-center leading-none transition-colors duration-200",
             localUserVote === 1 && "text-primary",
             localUserVote === -1 && "text-destructive",
             localUserVote === 0 && "text-muted-foreground"
           )}>
-            {localUserVote}
+            {localUpvotes - localDownvotes}
           </span>
           <button
             className={cn(
-              "transition-colors active:scale-95 p-0.5 rounded",
-              localUserVote === -1 ? "text-destructive" : "text-muted-foreground hover:text-destructive"
+              "transition-all duration-200 active:scale-95 p-0.5 rounded focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-1",
+              localUserVote === -1 ? "text-destructive bg-destructive/10" : "text-muted-foreground hover:text-destructive"
             )}
-            aria-label="Downvote"
+            aria-label={localUserVote === -1 ? "Remove downvote" : "Downvote"}
             disabled={isVoting || disabled || !onVote}
             onClick={() => handleVote(-1)}
           >
-            <ArrowDown className="w-4 h-4" />
+            <ArrowDown className={cn("w-4 h-4 transition-transform", localUserVote === -1 && "scale-110")} />
           </button>
         </div>
 
