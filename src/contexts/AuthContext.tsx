@@ -142,13 +142,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
       setUser(normalizedUser);
       return normalizedUser;
-    } catch (error) {
-      console.error("Failed to fetch user profile", error);
+    } catch (error: any) {
+      // Only log non-401 errors (401 is expected when token is invalid/expired)
+      if (error?.status !== 401) {
+        console.error("Failed to fetch user profile", error);
+      }
+      // Clear token if it's invalid
+      if (error?.status === 401) {
+        persistSession(null, null);
+      }
       return null;
     } finally {
       setIsBootstrapping(false);
     }
-  }, [token]);
+  }, [token, persistSession]);
 
   useEffect(() => {
     if (token) {

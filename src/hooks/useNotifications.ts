@@ -27,6 +27,13 @@ export const useNotifications = () => {
     },
     getNextPageParam: (lastPage) => lastPage.paging?.next_cursor ?? undefined,
     refetchInterval: POLL_INTERVAL_MS,
+    // Don't throw errors for 401 - user might not be logged in
+    throwOnError: false,
+    // Return empty data on 401 errors
+    retry: (failureCount, error: any) => {
+      if (error?.status === 401) return false;
+      return failureCount < 2;
+    },
   });
 
   const unreadCountQuery = useQuery({
@@ -37,6 +44,15 @@ export const useNotifications = () => {
       return data.count;
     },
     refetchInterval: POLL_INTERVAL_MS,
+    // Don't throw errors for 401 - user might not be logged in
+    throwOnError: false,
+    // Return 0 on 401 errors
+    retry: (failureCount, error: any) => {
+      if (error?.status === 401) return false;
+      return failureCount < 2;
+    },
+    // Return 0 if there's an error (user not logged in)
+    select: (data) => data ?? 0,
   });
 
   // Mutation to mark notification as read

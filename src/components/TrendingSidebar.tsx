@@ -58,6 +58,12 @@ const TrendingSidebar = () => {
     queryKey: ["trending", "local"],
     queryFn: () => fetchReports({ sort: "hot", limit: 5 }),
     staleTime: 60_000,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 503 (Service Unavailable)
+      if (error?.status === 503) return false;
+      return failureCount < 2;
+    },
+    throwOnError: false,
   });
 
   const {
@@ -67,6 +73,12 @@ const TrendingSidebar = () => {
     queryKey: ["trending", "india"],
     queryFn: () => fetchReports({ sort: "top", limit: 5 }),
     staleTime: 60_000,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 503 (Service Unavailable)
+      if (error?.status === 503) return false;
+      return failureCount < 2;
+    },
+    throwOnError: false,
   });
 
   return (

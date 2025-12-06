@@ -26,6 +26,12 @@ export const useReports = (filters: ReportsFilters = {}) => {
         cursor: pageParam as string | undefined,
       }),
     getNextPageParam: (lastPage) => lastPage.paging?.next_cursor ?? undefined,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 503 (Service Unavailable)
+      if (error?.status === 503) return false;
+      return failureCount < 2;
+    },
+    throwOnError: false,
   });
 };
 

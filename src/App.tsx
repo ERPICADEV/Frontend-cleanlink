@@ -27,7 +27,47 @@ import AdminSettings from "./pages/admin/Settings";
 import { AdminRoutes } from "./components/admin/AdminRoutes";
 import { FieldAdminRoutes } from "./components/admin/FieldAdminRoutes";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error: any) => {
+        // Don't retry on 401 (Unauthorized) or 403 (Forbidden) - these are auth issues
+        if (error?.status === 401 || error?.status === 403) {
+          return false;
+        }
+        // Don't retry on 503 (Service Unavailable) - server is down
+        if (error?.status === 503) {
+          return false;
+        }
+        // Retry other errors up to 2 times
+        return failureCount < 2;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      // Suppress error logging for expected 401s (when user is not logged in)
+      onError: (error: any) => {
+        // Only log non-401 errors to console
+        if (error?.status !== 401) {
+          // Let React Query handle the error normally
+          return;
+        }
+        // Silently handle 401 errors - they're expected when user is not logged in
+      },
+    },
+    mutations: {
+      retry: (failureCount, error: any) => {
+        // Don't retry auth errors
+        if (error?.status === 401 || error?.status === 403) {
+          return false;
+        }
+        // Don't retry server errors
+        if (error?.status >= 500) {
+          return false;
+        }
+        return failureCount < 1;
+      },
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

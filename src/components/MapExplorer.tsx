@@ -99,6 +99,12 @@ const MapExplorer = ({ category, onSelectReport }: MapExplorerProps) => {
       }),
     enabled: Boolean(boundsString),
     staleTime: 30_000,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 503 (Service Unavailable)
+      if (error?.status === 503) return false;
+      return failureCount < 2;
+    },
+    throwOnError: false,
   });
 
   const featureCount = data?.length ?? 0;
