@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import apiClient, { setAuthToken } from "@/lib/apiClient";
+import { handleApiError } from "@/lib/errorHandler";
 
 // In AuthContext.tsx, update the AuthUser interface:
 interface AuthUser {
@@ -170,13 +171,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = useCallback(
     async ({ email, password }: { email: string; password: string }) => {
-      const { data } = await apiClient.post<{
-        user: AuthUser;
-        token: string;
-        refresh_token: string;
-      }>("/auth/login", { email, password });
+      try {
+        const { data } = await apiClient.post<{
+          user: AuthUser;
+          token: string;
+          refresh_token: string;
+        }>("/auth/login", { email, password });
 
-      handleAuthResponse(data);
+        handleAuthResponse(data);
+      } catch (error) {
+        // Preserve the original error structure so error handler can access response
+        // The error handler will extract the message, so we can just re-throw
+        throw error;
+      }
     },
     [handleAuthResponse]
   );
@@ -199,21 +206,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       bio?: string;
       avatar_url?: string;
     }) => {
-      const { data } = await apiClient.post<{
-        user: AuthUser;
-        token: string;
-        refresh_token: string;
-      }>("/auth/signup", {
-        email,
-        password,
-        username,
-        phone,
-        region,
-        bio,
-        avatar_url,
-      });
+      try {
+        const { data } = await apiClient.post<{
+          user: AuthUser;
+          token: string;
+          refresh_token: string;
+        }>("/auth/signup", {
+          email,
+          password,
+          username,
+          phone,
+          region,
+          bio,
+          avatar_url,
+        });
 
-      handleAuthResponse(data);
+        handleAuthResponse(data);
+      } catch (error) {
+        // Preserve the original error structure so error handler can access response
+        // The error handler will extract the message, so we can just re-throw
+        throw error;
+      }
     },
     [handleAuthResponse]
   );

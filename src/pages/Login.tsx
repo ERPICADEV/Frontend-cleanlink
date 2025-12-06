@@ -7,7 +7,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Upload, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { isAxiosError } from "axios";
+import { handleApiError } from "@/lib/errorHandler";
 import { uploadImage } from "@/services/reportService";
 
 const Login = () => {
@@ -114,11 +114,19 @@ const Login = () => {
       // Trigger redirect check after user state updates
       setShouldRedirect(true);
     } catch (error) {
-      let message = "Something went wrong. Please try again.";
-      if (isAxiosError(error)) {
-        message = error.response?.data?.error?.message || message;
-      }
-      toast({ title: "Unable to continue", description: message, variant: "destructive" });
+      // Use the reusable error handler - it prioritizes message over fields
+      const errorMessage = handleApiError(error, {
+        defaultMessage: mode === "login" 
+          ? "Login failed. Please check your credentials and try again."
+          : "Signup failed. Please check your information and try again.",
+      });
+
+      // Always show the main error message (which comes from error.message or error.fields as fallback)
+      toast({
+        title: mode === "login" ? "Login failed" : "Signup failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
