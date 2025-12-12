@@ -897,9 +897,11 @@ const PostDetail = () => {
               </span>
             </h2>
 
-            <div className="space-y-4 mb-4">{renderComments(report.comments)}</div>
+            <div className="max-h-[60vh] md:max-h-none overflow-y-auto overflow-x-hidden mb-4 pr-2 scrollbar-thin" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <div className="space-y-4 pb-24 md:pb-4">{renderComments(report.comments)}</div>
+            </div>
             
-            <div className="sticky bottom-20 md:bottom-4 bg-background border border-border rounded-lg p-3 space-y-2">
+            <div className="sticky bottom-20 md:bottom-4 bg-background border border-border rounded-lg p-3 space-y-2 z-10">
               <Textarea
                 placeholder={
                   isAuthenticated ? "Add a comment…" : "Login to add a comment"

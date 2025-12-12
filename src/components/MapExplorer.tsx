@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import {
   MapContainer,
@@ -56,7 +56,13 @@ const BoundsTracker = ({ onBoundsChange }: BoundsTrackerProps) => {
   });
 
   useEffect(() => {
-    onBoundsChange(map.getBounds());
+    let isMounted = true;
+    if (isMounted) {
+      onBoundsChange(map.getBounds());
+    }
+    return () => {
+      isMounted = false;
+    };
   }, [map, onBoundsChange]);
 
   return null;
@@ -71,13 +77,18 @@ const MapExplorer = ({ category, onSelectReport }: MapExplorerProps) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [boundsString, setBoundsString] = useState<string>();
   const [mapReady, setMapReady] = useState(false);
+  const isMountedRef = useRef(true);
+  const queryClient = useQueryClient();
 
   // Try to use the viewer's location once
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
+    
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setMapCenter([position.coords.latitude, position.coords.longitude]);
+        if (isMountedRef.current) {
+          setMapCenter([position.coords.latitude, position.coords.longitude]);
+        }
       },
       () => {
         /* silently ignore */
@@ -85,6 +96,15 @@ const MapExplorer = ({ category, onSelectReport }: MapExplorerProps) => {
       { enableHighAccuracy: false, maximumAge: 60_000 }
     );
   }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      // Cancel any pending queries to prevent state updates after unmount
+      queryClient.cancelQueries({ queryKey: ["mapReports"] });
+    };
+  }, [queryClient]);
 
   const normalizedCategory =
     category && category !== "All" ? category : undefined;
@@ -110,7 +130,10 @@ const MapExplorer = ({ category, onSelectReport }: MapExplorerProps) => {
   const featureCount = data?.length ?? 0;
 
   const handleBoundsChange = useCallback((bounds: LatLngBounds) => {
-    setBoundsString(formatBounds(bounds));
+    if (!isMountedRef.current) return;
+    // Use a small delay to debounce and prevent race conditions
+    const boundsStr = formatBounds(bounds);
+    setBoundsString(boundsStr);
     setMapReady(true);
   }, []);
 

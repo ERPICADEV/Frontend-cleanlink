@@ -1,12 +1,14 @@
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
 import type { Notification, NotificationsResponse } from "@/types/notifications";
+import { useAuth } from "@/contexts/AuthContext";
 
 const NOTIFICATIONS_PAGE_SIZE = 20;
 const POLL_INTERVAL_MS = 30_000;
 
 export const useNotifications = () => {
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
 
   const notificationsQuery = useInfiniteQuery<NotificationsResponse>({
     queryKey: ["notifications"],
@@ -26,7 +28,8 @@ export const useNotifications = () => {
       return data;
     },
     getNextPageParam: (lastPage) => lastPage.paging?.next_cursor ?? undefined,
-    refetchInterval: POLL_INTERVAL_MS,
+    refetchInterval: isAuthenticated ? POLL_INTERVAL_MS : false,
+    enabled: isAuthenticated, // Only fetch when authenticated
     // Don't throw errors for 401 - user might not be logged in
     throwOnError: false,
     // Return empty data on 401 errors
@@ -43,7 +46,8 @@ export const useNotifications = () => {
       const { data } = await apiClient.get<{ count: number }>("/notifications/unread-count");
       return data.count;
     },
-    refetchInterval: POLL_INTERVAL_MS,
+    refetchInterval: isAuthenticated ? POLL_INTERVAL_MS : false,
+    enabled: isAuthenticated, // Only fetch when authenticated
     // Don't throw errors for 401 - user might not be logged in
     throwOnError: false,
     // Return 0 on 401 errors
@@ -66,11 +70,16 @@ export const useNotifications = () => {
     onMutate: async (notificationId) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["notifications"] });
+      await queryClient.cancelQueries({ queryKey: ["notifications-unread-count"] });
 
-      // Snapshot previous value for infinite query
-      const previousData = queryClient.getQueriesData({ queryKey: ["notifications"] });
+      // Snapshot previous values
+      const previousNotificationsData = queryClient.getQueriesData({ queryKey: ["notifications"] });
+      const previousUnreadCount = queryClient.getQueryData<number>(["notifications-unread-count"]);
 
-      // Optimistically update the infinite query cache
+      // Check if the notification is currently unread before updating
+      let wasUnread = false;
+      let notificationFound = false;
+      
       queryClient.setQueriesData(
         { queryKey: ["notifications"] },
         (old: any) => {
@@ -80,28 +89,90 @@ export const useNotifications = () => {
             ...old,
             pages: old.pages.map((page: NotificationsResponse) => ({
               ...page,
-              data: page.data.map((notif) =>
-                notif.id === notificationId ? { ...notif, isRead: true } : notif
-              ),
+              data: page.data.map((notif) => {
+                if (notif.id === notificationId) {
+                  notificationFound = true;
+                  wasUnread = !notif.isRead;
+                  return { ...notif, isRead: true };
+                }
+                return notif;
+              }),
             })),
           };
         }
       );
 
-      return { previousData };
+      // Optimistically update unread count
+      // Always decrement if we're marking as read, unless we know it was already read
+      if (previousUnreadCount !== undefined && previousUnreadCount > 0) {
+        if (notificationFound) {
+          // Notification found in cache
+          if (wasUnread) {
+            // Was unread, so decrement
+            queryClient.setQueryData<number>(
+              ["notifications-unread-count"],
+              Math.max(0, previousUnreadCount - 1)
+            );
+          }
+          // If was already read, don't change count
+        } else {
+          // Notification not in cache - assume it was unread and decrement optimistically
+          // This handles cases where notification is on a different page
+          queryClient.setQueryData<number>(
+            ["notifications-unread-count"],
+            Math.max(0, previousUnreadCount - 1)
+          );
+        }
+      }
+
+      return { previousNotificationsData, previousUnreadCount };
     },
     onError: (err, notificationId, context) => {
       // Rollback on error
-      if (context?.previousData) {
-        context.previousData.forEach(([queryKey, data]) => {
+      if (context?.previousNotificationsData) {
+        context.previousNotificationsData.forEach(([queryKey, data]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
+      if (context?.previousUnreadCount !== undefined) {
+        queryClient.setQueryData(["notifications-unread-count"], context.previousUnreadCount);
+      }
     },
-    onSettled: () => {
+    onSuccess: async (data, notificationId) => {
+      // Immediately refetch unread count to ensure accuracy
+      // Use refetchQueries with exact: false to catch all related queries
+      await queryClient.refetchQueries({ 
+        queryKey: ["notifications-unread-count"],
+        exact: false 
+      });
+      
+      // Also recalculate from notifications cache as a fallback
+      const notificationsData = queryClient.getQueriesData({ queryKey: ["notifications"] });
+      if (notificationsData && notificationsData.length > 0) {
+        const [, notificationsCache] = notificationsData[0];
+        if (notificationsCache && (notificationsCache as any).pages) {
+          const allNotifications = (notificationsCache as any).pages.flatMap(
+            (page: NotificationsResponse) => page.data || []
+          );
+          const unreadCount = allNotifications.filter((n: Notification) => !n.isRead).length;
+          // Only update if we have notifications in cache and count is reasonable
+          if (allNotifications.length > 0) {
+            queryClient.setQueryData<number>(
+              ["notifications-unread-count"],
+              unreadCount
+            );
+          }
+        }
+      }
+    },
+    onSettled: async () => {
       // Refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
+      // Force refetch with exact: false to catch all variations
+      await queryClient.refetchQueries({ 
+        queryKey: ["notifications-unread-count"],
+        exact: false 
+      });
     },
   });
 
