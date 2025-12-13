@@ -109,6 +109,17 @@ All colors MUST be HSL.
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  /* Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 @layer utilities {
@@ -147,6 +158,17 @@ All colors MUST be HSL.
     }
     .scrollbar-thin::-webkit-scrollbar-thumb {
       background-color: hsl(var(--muted-foreground) / 0.6);
+    }
+  }
+
+  /* Page transition utilities */
+  .page-enter {
+    animation: fade-in 0.15s ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .page-enter {
+      animation: none;
     }
   }
 }

@@ -12,6 +12,12 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdmin } from "@/hooks/useAdmin";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface AdminHeaderProps {
   breadcrumbs?: { label: string; href?: string }[];
@@ -30,17 +36,26 @@ export function AdminHeader({
   const adminName = user?.username || user?.email || "Admin";
   const region = adminRegion || (user?.region && typeof user.region === 'object' && 'city' in user.region ? String(user.region.city) : null) || "Unknown";
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 lg:px-6">
-      {/* Left: Menu & Breadcrumbs */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="lg:hidden"
-          onClick={onMenuClick}
-        >
-          <Menu className="w-5 h-5" />
-        </Button>
+    <TooltipProvider>
+      <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 lg:px-6">
+        {/* Left: Menu & Breadcrumbs */}
+        <div className="flex items-center gap-4">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                onClick={onMenuClick}
+                aria-label="Toggle menu"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Toggle menu</p>
+            </TooltipContent>
+          </Tooltip>
 
         <nav className="hidden sm:flex items-center gap-1 text-sm">
           {breadcrumbs.map((crumb, index) => (
@@ -81,32 +96,53 @@ export function AdminHeader({
         </div>
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="w-5 h-5" />
-          {notificationCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
-              {notificationCount > 99 ? "99+" : String(notificationCount)}
-            </span>
-          )}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
+              <Bell className="w-5 h-5" />
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+                  {notificationCount > 99 ? "99+" : String(notificationCount)}
+                </span>
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Notifications</p>
+          </TooltipContent>
+        </Tooltip>
 
         {/* Help */}
-        <Button variant="ghost" size="icon" className="hidden sm:flex">
-          <HelpCircle className="w-5 h-5" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="hidden sm:flex" aria-label="Help & Support">
+              <HelpCircle className="w-5 h-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Help & Support</p>
+          </TooltipContent>
+        </Tooltip>
 
         {/* User Menu */}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Avatar className="w-8 h-8">
-                <AvatarImage src="" />
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                  {adminName.split(' ').map(n => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full" aria-label="User menu">
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src="" />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                      {adminName.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>User menu</p>
+            </TooltipContent>
+          </Tooltip>
           <DropdownMenuContent align="end" className="w-56">
             <div className="px-2 py-1.5">
               <p className="font-medium">{adminName}</p>
@@ -132,5 +168,6 @@ export function AdminHeader({
         </DropdownMenu>
       </div>
     </header>
+    </TooltipProvider>
   );
 }

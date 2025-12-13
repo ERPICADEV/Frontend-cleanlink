@@ -9,6 +9,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "../shared/EmptyState";
 import type { Reward } from "@/types/rewards";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface RewardsTableProps {
   rewards: Reward[];
@@ -44,7 +50,8 @@ export function RewardsTable({
   }
 
   return (
-    <div className="rounded-xl border border-border overflow-hidden bg-card">
+    <TooltipProvider>
+      <div className="rounded-xl border border-border overflow-hidden bg-card">
       {/* Table Header */}
       <div className="hidden lg:grid grid-cols-12 gap-4 px-4 py-3 bg-muted/50 border-b border-border text-sm font-medium text-muted-foreground">
         <div className="col-span-2">Title</div>
@@ -105,11 +112,18 @@ export function RewardsTable({
               </div>
               <div className="col-span-1 flex justify-end">
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" aria-label="Reward actions">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Reward actions</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => onEdit(reward)}>
                       <Edit className="w-4 h-4 mr-2" />
@@ -144,11 +158,18 @@ export function RewardsTable({
                   </code>
                 </div>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" aria-label="Reward actions">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Reward actions</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => onEdit(reward)}>
                       <Edit className="w-4 h-4 mr-2" />
@@ -193,5 +214,6 @@ export function RewardsTable({
         })}
       </div>
     </div>
+    </TooltipProvider>
   );
 }

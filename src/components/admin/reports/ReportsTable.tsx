@@ -219,11 +219,18 @@ export function ReportsTable({
                 {/* Tablet Actions Dropdown */}
                 <div className="xl:hidden">
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" aria-label="Report actions">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Report actions</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => onResolve(report)} disabled={report.status === "resolved"}>
                         <CheckCircle className="w-4 h-4 mr-2" />
@@ -273,11 +280,18 @@ export function ReportsTable({
                   </Link>
                 </div>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="shrink-0">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="shrink-0" aria-label="Report actions">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Report actions</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => onResolve(report)} disabled={report.status === "resolved"}>
                       <CheckCircle className="w-4 h-4 mr-2" />

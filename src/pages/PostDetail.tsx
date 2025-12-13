@@ -28,6 +28,12 @@ import CommentItem from "@/components/CommentItem";
 import { EditReportModal } from "@/components/EditReportModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
@@ -648,10 +654,11 @@ const PostDetail = () => {
   const severityScore = report.aiScore?.severity ?? 0.5;
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0">
-      <Header />
+    <TooltipProvider>
+      <div className="min-h-screen bg-background pb-20 md:pb-0">
+        <Header />
 
-      <main className="container mx-auto px-4 py-6 max-w-4xl">
+        <main className="container mx-auto px-4 py-6 max-w-4xl">
         <Button
           variant="ghost"
           onClick={() => navigate(-1)}
@@ -667,17 +674,24 @@ const PostDetail = () => {
           <div className="p-4 border-b border-border">
             <div className="flex items-start gap-3">
               <div className="flex flex-col items-center gap-1 pt-1">
-                <button
-                  className={cn(
-                    "transition-all duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded",
-                    reportVoteStateCurrent.userVote === 1 ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"
-                  )}
-                  aria-label={reportVoteStateCurrent.userVote === 1 ? "Remove upvote" : "Upvote"}
-                  disabled={isVotingReport}
-                  onClick={() => handleVote(1)}
-                >
-                  <ArrowUp className={cn("w-6 h-6 transition-transform", reportVoteStateCurrent.userVote === 1 && "scale-110")} />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      className={cn(
+                        "transition-all duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded",
+                        reportVoteStateCurrent.userVote === 1 ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"
+                      )}
+                      aria-label={reportVoteStateCurrent.userVote === 1 ? "Remove upvote" : "Upvote"}
+                      disabled={isVotingReport}
+                      onClick={() => handleVote(1)}
+                    >
+                      <ArrowUp className={cn("w-6 h-6 transition-transform", reportVoteStateCurrent.userVote === 1 && "scale-110")} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{reportVoteStateCurrent.userVote === 1 ? "Remove upvote" : "Upvote"}</p>
+                  </TooltipContent>
+                </Tooltip>
                 <span className={cn(
                   "text-lg font-bold transition-colors duration-200",
                   reportVoteStateCurrent.userVote === 1 && "text-primary",
@@ -686,17 +700,24 @@ const PostDetail = () => {
                 )}>
                   {reportVoteStateCurrent.upvotes - reportVoteStateCurrent.downvotes}
                 </span>
-                <button
-                  className={cn(
-                    "transition-all duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2 rounded",
-                    reportVoteStateCurrent.userVote === -1 ? "text-destructive bg-destructive/10" : "text-muted-foreground hover:text-destructive"
-                  )}
-                  aria-label={reportVoteStateCurrent.userVote === -1 ? "Remove downvote" : "Downvote"}
-                  disabled={isVotingReport}
-                  onClick={() => handleVote(-1)}
-                >
-                  <ArrowDown className={cn("w-6 h-6 transition-transform", reportVoteStateCurrent.userVote === -1 && "scale-110")} />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      className={cn(
+                        "transition-all duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2 rounded",
+                        reportVoteStateCurrent.userVote === -1 ? "text-destructive bg-destructive/10" : "text-muted-foreground hover:text-destructive"
+                      )}
+                      aria-label={reportVoteStateCurrent.userVote === -1 ? "Remove downvote" : "Downvote"}
+                      disabled={isVotingReport}
+                      onClick={() => handleVote(-1)}
+                    >
+                      <ArrowDown className={cn("w-6 h-6 transition-transform", reportVoteStateCurrent.userVote === -1 && "scale-110")} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{reportVoteStateCurrent.userVote === -1 ? "Remove downvote" : "Downvote"}</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
 
               <div className="flex-1 min-w-0">
@@ -706,12 +727,19 @@ const PostDetail = () => {
                   {report.reporter?.id === user?.id && report.status === "pending" && (
                     <div className="ml-auto">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreVertical className="w-4 h-4" />
-                            <span className="sr-only">Report options</span>
-                          </Button>
-                        </DropdownMenuTrigger>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="Report options">
+                                <MoreVertical className="w-4 h-4" />
+                                <span className="sr-only">Report options</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Report options</p>
+                          </TooltipContent>
+                        </Tooltip>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => setShowEditModal(true)}>
                             <Edit className="w-4 h-4 mr-2" />
@@ -752,29 +780,58 @@ const PostDetail = () => {
 
           {/* Actions Row */}
           <div className="px-4 py-3 border-b border-border bg-accent/30 flex items-center gap-4 text-sm text-muted-foreground">
-            <button className="flex items-center gap-1.5 hover:text-primary transition-colors">
-              <MessageSquare className="w-4 h-4" />
-              Comment ({commentsCount})
-            </button>
-            <button className="flex items-center gap-1.5 hover:text-primary transition-colors">
-              <Share2 className="w-4 h-4" />
-              Share
-            </button>
-            <button className="flex items-center gap-1.5 hover:text-primary transition-colors">
-              <Bookmark className="w-4 h-4" />
-              Save
-            </button>
-            <button
-              className="ml-auto text-xs flex items-center gap-1 hover:text-foreground"
-              onClick={() => refetch()}
-            >
-              {isFetching ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <RefreshCcw className="w-3 h-3" />
-              )}
-              Refresh
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="flex items-center gap-1.5 hover:text-primary transition-colors" aria-label="View comments">
+                  <MessageSquare className="w-4 h-4" />
+                  Comment ({commentsCount})
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View comments</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="flex items-center gap-1.5 hover:text-primary transition-colors" aria-label="Share this post">
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Share this post</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="flex items-center gap-1.5 hover:text-primary transition-colors" aria-label="Save for later">
+                  <Bookmark className="w-4 h-4" />
+                  Save
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Save for later</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className="ml-auto text-xs flex items-center gap-1 hover:text-foreground"
+                  onClick={() => refetch()}
+                  aria-label="Refresh post"
+                >
+                  {isFetching ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <RefreshCcw className="w-3 h-3" />
+                  )}
+                  Refresh
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Refresh post</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           {/* AI Summary */}
@@ -1003,7 +1060,8 @@ const PostDetail = () => {
       </Dialog>
 
       <BottomNav />
-    </div>
+      </div>
+    </TooltipProvider>
   );
 };
 

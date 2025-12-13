@@ -2,6 +2,12 @@ import { Shield, UserPlus, CheckCircle, ScrollText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import type { Report } from "@/types/admin";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface AdminActionsBannerProps {
   report: Report;
@@ -23,18 +29,19 @@ export function AdminActionsBanner({
   const isResolved = report.status === "resolved";
 
   return (
-    <div className="bg-admin-badge border border-admin-badge-border rounded-xl p-4 mb-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* Label */}
-        <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-admin-badge-foreground" />
-          <span className="font-semibold text-admin-badge-foreground">
-            ADMIN ACTIONS
-          </span>
-        </div>
+    <TooltipProvider>
+      <div className="bg-admin-badge border border-admin-badge-border rounded-xl p-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* Label */}
+          <div className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-admin-badge-foreground" />
+            <span className="font-semibold text-admin-badge-foreground">
+              ADMIN ACTIONS
+            </span>
+          </div>
 
-        {/* Actions */}
-        <div className="flex flex-wrap items-center gap-2">
+          {/* Actions */}
+          <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -66,16 +73,25 @@ export function AdminActionsBanner({
           </Button>
 
           {/* Dismiss */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setDismissed(true)}
-            className="ml-2 h-8 w-8"
-          >
-            <X className="w-4 h-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDismissed(true)}
+                className="ml-2 h-8 w-8"
+                aria-label="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Dismiss</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 }

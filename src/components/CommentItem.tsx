@@ -20,6 +20,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/formatters";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface CommentItemProps {
   id: string;
@@ -188,62 +194,84 @@ const CommentItem = ({
   };
 
   return (
-    <>
-      <div className="flex gap-2 py-1">
-        {/* Collapse/Expand Button - Reddit style with greyish background */}
-        {hasReplies && onToggleCollapse && (
-          <button
-            className="flex-shrink-0 w-5 h-5 flex items-center justify-center bg-muted hover:bg-muted-foreground/20 rounded-full border border-border transition-all mt-0.5 active:scale-95"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleCollapse();
-            }}
-            aria-label={isCollapsed ? "Expand comment thread" : "Collapse comment thread"}
-          >
-            {isCollapsed ? (
-              <Plus className="w-2.5 h-2.5 text-muted-foreground" strokeWidth={2.5} />
-            ) : (
-              <Minus className="w-2.5 h-2.5 text-muted-foreground" strokeWidth={2.5} />
-            )}
-          </button>
-        )}
-        
-        {/* Spacer when no collapse button */}
-        {(!hasReplies || !onToggleCollapse) && <div className="w-5" />}
-        
-        {/* Voting UI - Reddit style */}
-        <div className="flex flex-col items-center gap-0.5 pt-1 flex-shrink-0">
-          <button
-            className={cn(
-              "transition-all duration-200 active:scale-95 p-0.5 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
-              localUserVote === 1 ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"
-            )}
-            aria-label={localUserVote === 1 ? "Remove upvote" : "Upvote"}
-            disabled={isVoting || disabled || !onVote}
-            onClick={() => handleVote(1)}
-          >
-            <ArrowUp className={cn("w-4 h-4 transition-transform", localUserVote === 1 && "scale-110")} />
-          </button>
-          <span className={cn(
-            "text-xs font-medium min-w-[2ch] text-center leading-none transition-colors duration-200",
-            localUserVote === 1 && "text-primary",
-            localUserVote === -1 && "text-destructive",
-            localUserVote === 0 && "text-muted-foreground"
-          )}>
-            {localUpvotes - localDownvotes}
-          </span>
-          <button
-            className={cn(
-              "transition-all duration-200 active:scale-95 p-0.5 rounded focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-1",
-              localUserVote === -1 ? "text-destructive bg-destructive/10" : "text-muted-foreground hover:text-destructive"
-            )}
-            aria-label={localUserVote === -1 ? "Remove downvote" : "Downvote"}
-            disabled={isVoting || disabled || !onVote}
-            onClick={() => handleVote(-1)}
-          >
-            <ArrowDown className={cn("w-4 h-4 transition-transform", localUserVote === -1 && "scale-110")} />
-          </button>
-        </div>
+    <TooltipProvider>
+      <>
+        <div className="flex gap-2 py-1">
+          {/* Collapse/Expand Button - Reddit style with greyish background */}
+          {hasReplies && onToggleCollapse && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className="flex-shrink-0 w-5 h-5 flex items-center justify-center bg-muted hover:bg-muted-foreground/20 rounded-full border border-border transition-all mt-0.5 active:scale-95"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleCollapse();
+                  }}
+                  aria-label={isCollapsed ? "Expand comment thread" : "Collapse comment thread"}
+                >
+                  {isCollapsed ? (
+                    <Plus className="w-2.5 h-2.5 text-muted-foreground" strokeWidth={2.5} />
+                  ) : (
+                    <Minus className="w-2.5 h-2.5 text-muted-foreground" strokeWidth={2.5} />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isCollapsed ? "Expand comment thread" : "Collapse comment thread"}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          
+          {/* Spacer when no collapse button */}
+          {(!hasReplies || !onToggleCollapse) && <div className="w-5" />}
+          
+          {/* Voting UI - Reddit style */}
+          <div className="flex flex-col items-center gap-0.5 pt-1 flex-shrink-0">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className={cn(
+                    "transition-all duration-200 active:scale-95 p-0.5 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
+                    localUserVote === 1 ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"
+                  )}
+                  aria-label={localUserVote === 1 ? "Remove upvote" : "Upvote"}
+                  disabled={isVoting || disabled || !onVote}
+                  onClick={() => handleVote(1)}
+                >
+                  <ArrowUp className={cn("w-4 h-4 transition-transform", localUserVote === 1 && "scale-110")} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{localUserVote === 1 ? "Remove upvote" : "Upvote"}</p>
+              </TooltipContent>
+            </Tooltip>
+            <span className={cn(
+              "text-xs font-medium min-w-[2ch] text-center leading-none transition-colors duration-200",
+              localUserVote === 1 && "text-primary",
+              localUserVote === -1 && "text-destructive",
+              localUserVote === 0 && "text-muted-foreground"
+            )}>
+              {localUpvotes - localDownvotes}
+            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className={cn(
+                    "transition-all duration-200 active:scale-95 p-0.5 rounded focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-1",
+                    localUserVote === -1 ? "text-destructive bg-destructive/10" : "text-muted-foreground hover:text-destructive"
+                  )}
+                  aria-label={localUserVote === -1 ? "Remove downvote" : "Downvote"}
+                  disabled={isVoting || disabled || !onVote}
+                  onClick={() => handleVote(-1)}
+                >
+                  <ArrowDown className={cn("w-4 h-4 transition-transform", localUserVote === -1 && "scale-110")} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{localUserVote === -1 ? "Remove downvote" : "Downvote"}</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
 
         {/* Comment Content */}
         <div className="flex-1 min-w-0 group">
@@ -267,17 +295,25 @@ const CommentItem = ({
             {canEdit && !isLocalEditing && (
               <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreVertical className="w-3 h-3" />
-                      <span className="sr-only">Comment options</span>
-                    </Button>
-                  </DropdownMenuTrigger>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label="Comment options"
+                        >
+                          <MoreVertical className="w-3 h-3" />
+                          <span className="sr-only">Comment options</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Comment options</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <DropdownMenuContent align="end">
                     {onEdit && (
                       <DropdownMenuItem onClick={handleEditClick}>
@@ -384,6 +420,7 @@ const CommentItem = ({
           )}
         </div>
       </div>
+      </>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
@@ -405,7 +442,7 @@ const CommentItem = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </TooltipProvider>
   );
 };
 

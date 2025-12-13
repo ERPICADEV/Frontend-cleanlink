@@ -5,6 +5,12 @@ import StatusPill from "@/components/StatusPill";
 import type { ReportSummary } from "@/services/reportService";
 import { voteOnReport } from "@/services/reportService";
 import { useVote, type VoteState, type VoteValue } from "@/hooks/useVote";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface PostRowProps {
   post: ReportSummary;
@@ -91,45 +97,60 @@ const PostRow = ({ post, onClick }: PostRowProps) => {
   const categoryTone = getCategoryTone(post.category);
 
   return (
-    <div className="border-b border-border bg-card hover:bg-accent/30 transition-colors">
-      <div className="flex gap-2 p-3 sm:p-4">
-        {/* Upvote Column */}
-        <div className="flex flex-col items-center gap-0.5 pt-1 w-10 flex-shrink-0">
-          <button 
-            className={cn(
-              "p-1.5 hover:bg-accent rounded transition-all duration-200 touch-manipulation",
-              "active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-              isVoting && "opacity-50 cursor-not-allowed",
-              currentUserVote === 1 && "text-primary bg-primary/10"
-            )}
-            aria-label={currentUserVote === 1 ? "Remove upvote" : "Upvote"}
-            onClick={(e) => handleVoteClick(1, e)}
-            disabled={isVoting}
-          >
-            <ChevronUp className={cn("w-5 h-5 transition-transform", currentUserVote === 1 && "scale-110")} />
-          </button>
-          <span className={cn(
-            "text-sm font-semibold tabular-nums transition-colors duration-200",
-            currentUserVote === 1 && "text-primary",
-            currentUserVote === -1 && "text-destructive",
-            currentUserVote === 0 && "text-muted-foreground"
-          )}>
-            {netVoteCount}
-          </span>
-          <button 
-            className={cn(
-              "p-1.5 hover:bg-accent rounded transition-all duration-200 touch-manipulation",
-              "active:scale-95 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2",
-              isVoting && "opacity-50 cursor-not-allowed",
-              currentUserVote === -1 && "text-destructive bg-destructive/10"
-            )}
-            aria-label={currentUserVote === -1 ? "Remove downvote" : "Downvote"}
-            onClick={(e) => handleVoteClick(-1, e)}
-            disabled={isVoting}
-          >
-            <ChevronDown className={cn("w-5 h-5 transition-transform", currentUserVote === -1 && "scale-110")} />
-          </button>
-        </div>
+    <TooltipProvider>
+      <div className="border-b border-border bg-card hover:bg-accent/30 transition-colors">
+        <div className="flex gap-2 p-3 sm:p-4">
+          {/* Upvote Column */}
+          <div className="flex flex-col items-center gap-0.5 pt-1 w-10 flex-shrink-0">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  className={cn(
+                    "p-1.5 hover:bg-accent rounded transition-all duration-200 touch-manipulation",
+                    "active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                    isVoting && "opacity-50 cursor-not-allowed",
+                    currentUserVote === 1 && "text-primary bg-primary/10"
+                  )}
+                  aria-label={currentUserVote === 1 ? "Remove upvote" : "Upvote"}
+                  onClick={(e) => handleVoteClick(1, e)}
+                  disabled={isVoting}
+                >
+                  <ChevronUp className={cn("w-5 h-5 transition-transform", currentUserVote === 1 && "scale-110")} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{currentUserVote === 1 ? "Remove upvote" : "Upvote"}</p>
+              </TooltipContent>
+            </Tooltip>
+            <span className={cn(
+              "text-sm font-semibold tabular-nums transition-colors duration-200",
+              currentUserVote === 1 && "text-primary",
+              currentUserVote === -1 && "text-destructive",
+              currentUserVote === 0 && "text-muted-foreground"
+            )}>
+              {netVoteCount}
+            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  className={cn(
+                    "p-1.5 hover:bg-accent rounded transition-all duration-200 touch-manipulation",
+                    "active:scale-95 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2",
+                    isVoting && "opacity-50 cursor-not-allowed",
+                    currentUserVote === -1 && "text-destructive bg-destructive/10"
+                  )}
+                  aria-label={currentUserVote === -1 ? "Remove downvote" : "Downvote"}
+                  onClick={(e) => handleVoteClick(-1, e)}
+                  disabled={isVoting}
+                >
+                  <ChevronDown className={cn("w-5 h-5 transition-transform", currentUserVote === -1 && "scale-110")} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{currentUserVote === -1 ? "Remove downvote" : "Downvote"}</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0 cursor-pointer" onClick={onClick}>
@@ -175,6 +196,7 @@ const PostRow = ({ post, onClick }: PostRowProps) => {
         )}
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 

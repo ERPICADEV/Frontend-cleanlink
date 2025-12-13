@@ -4,6 +4,12 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { voteOnReport } from "@/services/reportService";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -119,10 +125,11 @@ const IssueCard = ({ issue, onClick }: IssueCardProps) => {
   };
 
   return (
-    <Card
-      className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-      onClick={onClick}
-    >
+    <TooltipProvider>
+      <Card
+        className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+        onClick={onClick}
+      >
       <div className="flex gap-4 p-4">
         <img
           src={issue.imageUrl}
@@ -159,26 +166,42 @@ const IssueCard = ({ issue, onClick }: IssueCardProps) => {
             </Badge>
 
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 gap-1"
-                onClick={(e) => handleVote(1, e)}
-                disabled={voteMutation.isPending}
-              >
-                <ArrowUp className="w-4 h-4" />
-                <span className="text-xs">{issue.upvotes}</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 gap-1"
-                onClick={(e) => handleVote(-1, e)}
-                disabled={voteMutation.isPending}
-              >
-                <ArrowDown className="w-4 h-4" />
-                <span className="text-xs">{issue.downvotes}</span>
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 gap-1"
+                    onClick={(e) => handleVote(1, e)}
+                    disabled={voteMutation.isPending}
+                    aria-label="Upvote"
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                    <span className="text-xs">{issue.upvotes}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Upvote</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 gap-1"
+                    onClick={(e) => handleVote(-1, e)}
+                    disabled={voteMutation.isPending}
+                    aria-label="Downvote"
+                  >
+                    <ArrowDown className="w-4 h-4" />
+                    <span className="text-xs">{issue.downvotes}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Downvote</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
 
@@ -188,6 +211,7 @@ const IssueCard = ({ issue, onClick }: IssueCardProps) => {
         </div>
       </div>
     </Card>
+    </TooltipProvider>
   );
 };
 
