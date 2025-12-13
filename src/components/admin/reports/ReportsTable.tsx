@@ -33,6 +33,7 @@ interface ReportsTableProps {
   onResolve: (report: Report) => void;
   onViewAudit: (reportId: string) => void;
   showAssign?: boolean;
+  showResolve?: boolean;
 }
 
 export function ReportsTable({
@@ -43,6 +44,7 @@ export function ReportsTable({
   onResolve,
   onViewAudit,
   showAssign = true,
+  showResolve = true,
 }: ReportsTableProps) {
   const allSelected = reports.length > 0 && selectedIds.length === reports.length;
   const someSelected = selectedIds.length > 0 && selectedIds.length < reports.length;
@@ -229,15 +231,17 @@ export function ReportsTable({
               <div className="col-span-2 flex items-center justify-end gap-2">
                 {/* Desktop Actions */}
                 <div className="hidden xl:flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onResolve(report)}
-                    disabled={report.status === "resolved"}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    Resolve
-                  </Button>
+                  {showResolve && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onResolve(report)}
+                      disabled={report.status === "resolved"}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Resolve
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -264,10 +268,12 @@ export function ReportsTable({
                       </TooltipContent>
                     </Tooltip>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onResolve(report)} disabled={report.status === "resolved"}>
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Resolve Report
-                      </DropdownMenuItem>
+                      {showResolve && (
+                        <DropdownMenuItem onClick={() => onResolve(report)} disabled={report.status === "resolved"}>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Resolve Report
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => onViewAudit(report.id)}>
                         <ScrollText className="w-4 h-4 mr-2" />
                         View Audit Log

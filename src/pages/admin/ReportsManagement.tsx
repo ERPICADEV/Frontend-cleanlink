@@ -20,7 +20,6 @@ import { ChevronDown, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { ReportsFilters } from "@/components/admin/reports/ReportsFilters";
 import { ReportsTable } from "@/components/admin/reports/ReportsTable";
 import { AssignReportModal } from "@/components/admin/modals/AssignReportModal";
-import { ResolveReportModal } from "@/components/admin/modals/ResolveReportModal";
 import { useAdminReports } from "@/hooks/useAdminReports";
 import { useAdmin } from "@/hooks/useAdmin";
 import type { Report, ReportsFilter, ReportStatus } from "@/types/admin";
@@ -134,15 +133,12 @@ export default function ReportsManagement() {
     filters: hookFilters,
     setFilters: setHookFilters,
     assignReport,
-    resolveReport,
     isAssigning,
-    isResolving,
   } = useAdminReports(adminRegion ? { region: adminRegion } : undefined);
 
   const [filters, setFilters] = useState<ReportsFilter>(defaultFilters);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
-  const [resolveModalOpen, setResolveModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -183,10 +179,6 @@ export default function ReportsManagement() {
     setAssignModalOpen(true);
   };
 
-  const handleResolve = (report: Report) => {
-    setSelectedReport(report);
-    setResolveModalOpen(true);
-  };
 
   const handleViewAudit = (reportId: string) => {
     navigate(`/admin/audit/${reportId}`);
@@ -198,22 +190,6 @@ export default function ReportsManagement() {
     setSelectedReport(null);
   };
 
-  const handleResolveSubmit = async (
-    reportId: string,
-    status: ReportStatus,
-    details: string,
-    duplicateId?: string
-  ) => {
-    // Backend requires cleaned_image_url, so we'll use a placeholder for now
-    // In production, this should come from the image upload in the modal
-    await resolveReport(reportId, {
-      cleaned_image_url: "https://placeholder.com/after.jpg", // TODO: Get from modal upload
-      notes: details,
-      status: status === "resolved" ? "resolved" : status === "duplicate" ? "duplicate" : "cannot_fix",
-    });
-    setResolveModalOpen(false);
-    setSelectedReport(null);
-  };
 
   return (
     <AdminLayout
@@ -227,7 +203,7 @@ export default function ReportsManagement() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Reports Management</h1>
           <p className="text-muted-foreground">
-            View, assign, and resolve citizen reports
+            View and assign citizen reports
           </p>
         </div>
 
@@ -300,7 +276,8 @@ export default function ReportsManagement() {
             selectedIds={selectedIds}
             onSelectionChange={setSelectedIds}
             onAssign={handleAssign}
-            onResolve={handleResolve}
+            onResolve={() => {}}
+            showResolve={false}
             onViewAudit={handleViewAudit}
           />
         )}
@@ -396,13 +373,6 @@ export default function ReportsManagement() {
           report={selectedReport}
           onAssign={handleAssignSubmit}
           isLoading={isAssigning}
-        />
-        <ResolveReportModal
-          open={resolveModalOpen}
-          onOpenChange={setResolveModalOpen}
-          report={selectedReport}
-          onResolve={handleResolveSubmit}
-          isLoading={isResolving}
         />
       </div>
     </AdminLayout>
