@@ -68,6 +68,9 @@ export interface AIScore {
   severity?: number;
   duplicate_prob?: number;
   insights?: string[];
+  confidence_label?: "low" | "medium" | "high" | "very_high";
+  explanation?: string;
+  vision_insights?: string[] | null;
   [key: string]: unknown;
 }
 
@@ -141,6 +144,23 @@ export const fetchReportDetail = async (id: string) => {
 
 export const createReport = async (payload: CreateReportPayload) => {
   const { data } = await apiClient.post<CreateReportResponse>("/reports", payload);
+  return data;
+};
+
+export interface PreSubmissionSuggestions {
+  suggestions: string[];
+}
+
+export const getPreSubmissionSuggestions = async (payload: {
+  title: string;
+  description: string;
+  category: string;
+  images?: string[];
+}): Promise<PreSubmissionSuggestions> => {
+  const { data } = await apiClient.post<PreSubmissionSuggestions>(
+    "/reports/pre-submission-suggestions",
+    payload
+  );
   return data;
 };
 

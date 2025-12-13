@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  ChevronDown,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -57,6 +58,11 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   createComment,
   fetchReportDetail,
@@ -834,7 +840,7 @@ const PostDetail = () => {
             </Tooltip>
           </div>
 
-          {/* AI Summary */}
+          {/* AI Assistance */}
           {report.aiScore && (
             <div className="p-4 border-b border-border bg-accent/20">
               <div className="flex items-start gap-3">
@@ -842,17 +848,46 @@ const PostDetail = () => {
                   <CheckCircle className="w-4 h-4 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-sm mb-1">AI insight</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Legitimacy{" "}
-                    <span className="font-semibold text-foreground">
-                      {Math.round(legitScore * 100)}%
-                    </span>{" "}
-                    • Severity{" "}
-                    <span className="font-semibold text-foreground">
-                      {Math.round(severityScore * 100)}%
-                    </span>
-                  </p>
+                  <h3 className="font-semibold text-sm mb-1">AI Assistance</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-muted-foreground">Confidence:</span>
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          report.aiScore.confidence_label === "very_high" && "bg-green-100 text-green-800 border-green-300",
+                          report.aiScore.confidence_label === "high" && "bg-blue-100 text-blue-800 border-blue-300",
+                          report.aiScore.confidence_label === "medium" && "bg-yellow-100 text-yellow-800 border-yellow-300",
+                          report.aiScore.confidence_label === "low" && "bg-gray-100 text-gray-800 border-gray-300"
+                        )}
+                      >
+                        {report.aiScore.confidence_label 
+                          ? report.aiScore.confidence_label.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())
+                          : "Medium"}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        • Severity{" "}
+                        <span className="font-semibold text-foreground">
+                          {Math.round(severityScore * 100)}%
+                        </span>
+                      </span>
+                    </div>
+                    {report.aiScore.explanation && (
+                      <Collapsible>
+                        <CollapsibleTrigger asChild>
+                          <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+                            <ChevronDown className="w-3 h-3" />
+                            Why this score?
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <p className="text-sm text-muted-foreground mt-1 pl-4">
+                            {report.aiScore.explanation}
+                          </p>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

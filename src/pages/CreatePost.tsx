@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { Upload, MapPin, Loader2 } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useEffect, useState, useMemo } from "react";
+import { Upload, MapPin, Loader2, Lightbulb, X } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +15,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Switch } from "@/components/ui/switch";
-import { createReport, type CreateReportPayload } from "@/services/reportService";
+import { createReport, getPreSubmissionSuggestions, type CreateReportPayload } from "@/services/reportService";
 import { useAuth } from "@/contexts/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const categories = ["Garbage", "Road", "Water", "Trees", "Electricity", "Other"];
 
@@ -34,9 +35,37 @@ const CreatePost = () => {
   const [stateName, setStateName] = useState("");
   const [visibility, setVisibility] = useState<"public" | "masked">("public");
   const [anonymous, setAnonymous] = useState(false);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState<string[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+
+  // Check if form has enough data for suggestions
+  const canGetSuggestions = useMemo(() => {
+    return (
+      title.trim().length >= 10 &&
+      description.trim().length >= 20 &&
+      Boolean(category)
+    );
+  }, [title, description, category]);
+  
+
+  // Fetch pre-submission suggestions
+  const { data: suggestionsData } = useQuery({
+    queryKey: ["pre-submission-suggestions", title, description, category, imageData],
+    queryFn: () => getPreSubmissionSuggestions({
+      title: title.trim(),
+      description: description.trim(),
+      category: category.toLowerCase(),
+      images: imageData ? [imageData] : [],
+    }),
+    enabled: canGetSuggestions,
+    staleTime: 30000, // Cache for 30 seconds
+  });
+
+  const suggestions = suggestionsData?.suggestions?.filter(
+    s => !dismissedSuggestions.includes(s)
+  ) || [];
 
   const mutation = useMutation({
     mutationFn: (payload: CreateReportPayload) => createReport(payload),
@@ -302,6 +331,40 @@ const CreatePost = () => {
               {locationLabel.includes("Lat") ? "Refresh location" : "Auto-detect Location"}
             </Button>
           </div>
+
+          {/* AI Tips */}
+          {suggestions.length > 0 && (
+            <Alert className="bg-blue-50 border-blue-200">
+              <Lightbulb className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="space-y-2">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm text-blue-900 mb-1">AI Tips</p>
+                    <ul className="space-y-1 text-sm text-blue-800">
+                      {suggestions.map((suggestion, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-blue-600 mt-0.5">•</span>
+                          <span>{suggestion}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                    onClick={() => {
+                      setDismissedSuggestions(suggestions);
+                    }}
+                    aria-label="Dismiss suggestions"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">

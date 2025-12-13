@@ -1,16 +1,23 @@
 {
   "compilerOptions": {
+    /* Runtime */
     "target": "ES2022",
     "lib": ["ES2023"],
-    "module": "ESNext",
-    "skipLibCheck": true,
 
-    /* Bundler mode */
-    "moduleResolution": "bundler",
+    /* Modules */
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "moduleDetection": "force",
+
+    /* Node / tooling */
+    "types": ["node"],
+    "allowJs": true,
+
+    /* Build behavior */
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
-    "moduleDetection": "force",
     "noEmit": true,
+    "skipLibCheck": true,
 
     /* Linting */
     "strict": true,
@@ -18,5 +25,13 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts"]
+
+  /* 🔑 Include ALL tooling configs */
+  "include": [
+    "vite.config.ts",
+    "tailwind.config.ts",
+    "postcss.config.*",
+    "eslint.config.*"
+  ],
+  "exclude": ["node_modules"]
 }

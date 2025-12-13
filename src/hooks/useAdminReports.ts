@@ -13,7 +13,7 @@ export const useAdminReports = (initialFilters?: Partial<ReportsFilter>) => {
     status: initialFilters?.status || "all",
     category: initialFilters?.category || "all",
     region: initialFilters?.region || "all",
-    sortBy: initialFilters?.sortBy || "newest",
+    sortBy: initialFilters?.sortBy || "priority", // Default to priority sorting
   });
 
   // Fetch reports
@@ -91,6 +91,8 @@ export const useAdminReports = (initialFilters?: Partial<ReportsFilter>) => {
       downvotes: r.downvotes || 0,
       communityScore: r.community_score || 0,
       comments_count: r.comments_count || 0,
+      priority_score: r.priority_score,
+      priority_label: r.priority_label,
     }));
   }, [reportsData]);
 
