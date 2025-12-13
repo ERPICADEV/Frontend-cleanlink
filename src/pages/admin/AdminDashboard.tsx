@@ -209,9 +209,10 @@ export default function AdminDashboard() {
                   selectedIds={[]}
                   onSelectionChange={() => {}}
                   onAssign={() => {}}
-                  onResolve={(report) => navigate(`/admin/reports/${report.id}/resolve`)}
+                  onResolve={() => {}}
                   onViewAudit={(id) => navigate(`/admin/audit/${id}`)}
                   showAssign={false}
+                  showResolve={false}
                 />
               ) : (
                 <div className="text-center py-12">

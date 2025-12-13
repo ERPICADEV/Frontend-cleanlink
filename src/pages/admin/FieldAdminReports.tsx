@@ -9,11 +9,12 @@ import { Search, Filter, Plus } from 'lucide-react';
 import { useAssignedReports } from '@/hooks/useAssignedReports';
 import { ReportsTable } from '@/components/admin/reports/ReportsTable';
 import { UpdateProgressModal } from '@/components/admin/modals/UpdateProgressModal';
+import { ResolveReportModal } from '@/components/admin/modals/ResolveReportModal';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { updateReportProgress, submitForApproval, fetchAuditLogs } from '@/services/adminService';
+import { updateReportProgress, submitForApproval, fetchAuditLogs, resolveReport } from '@/services/adminService';
 import { uploadImage } from '@/services/reportService';
 import { useToast } from '@/hooks/use-toast';
-import type { Report } from '@/types/admin';
+import type { Report, ReportStatus } from '@/types/admin';
 
 export default function FieldAdminReports() {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ export default function FieldAdminReports() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+  const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
 
   const filteredReports = reports.filter(report => {
     const matchesSearch = report.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -148,8 +150,38 @@ export default function FieldAdminReports() {
   };
 
   const handleResolve = (report: Report) => {
-    // Field admins can't directly resolve - they submit for approval
-    handleUpdateProgress(report);
+    setSelectedReport(report);
+    setIsResolveModalOpen(true);
+  };
+
+  const handleResolveSubmit = async (
+    reportId: string,
+    status: ReportStatus,
+    details: string,
+    duplicateId?: string
+  ) => {
+    try {
+      // Backend requires cleaned_image_url, so we'll use a placeholder for now
+      // In production, this should come from the image upload in the modal
+      await resolveReport(reportId, {
+        cleaned_image_url: "https://placeholder.com/after.jpg", // TODO: Get from modal upload
+        notes: details,
+        status: status === "resolved" ? "resolved" : status === "duplicate" ? "duplicate" : "cannot_fix",
+      });
+      queryClient.invalidateQueries({ queryKey: ['assignedReports'] });
+      toast({
+        title: 'Report resolved',
+        description: 'Report has been resolved successfully.',
+      });
+      setIsResolveModalOpen(false);
+      setSelectedReport(null);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error?.response?.data?.error?.message || 'Failed to resolve report.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleAssign = () => {
@@ -263,6 +295,15 @@ export default function FieldAdminReports() {
           isSubmitting={updateProgressMutation.isPending || submitApprovalMutation.isPending}
         />
       )}
+
+      {/* Resolve Report Modal */}
+      <ResolveReportModal
+        open={isResolveModalOpen}
+        onOpenChange={setIsResolveModalOpen}
+        report={selectedReport}
+        onResolve={handleResolveSubmit}
+        isLoading={false}
+      />
     </div>
   );
 }
