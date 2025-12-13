@@ -16,7 +16,11 @@ export interface Report {
     severity?: number;
     duplicate_prob?: number;
     insights?: string[];
+    confidence_label?: "low" | "medium" | "high" | "very_high";
+    explanation?: string;
   };
+  priority_score?: number;
+  priority_label?: "Critical" | "High" | "Normal";
   createdAt: string;
   updatedAt: string;
   assignedTo?: string;

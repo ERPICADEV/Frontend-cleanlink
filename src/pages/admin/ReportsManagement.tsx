@@ -122,7 +122,7 @@ const defaultFilters: ReportsFilter = {
   status: "all",
   category: "all",
   region: "all",
-  sortBy: "newest",
+  sortBy: "priority", // Default to priority sorting
 };
 
 export default function ReportsManagement() {

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ExternalLink, UserPlus, CheckCircle, ScrollText, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -88,6 +89,7 @@ export function ReportsTable({
           <div className="col-span-2">Title</div>
           <div className="col-span-1">Category</div>
           <div className="col-span-1">Status</div>
+          <div className="col-span-1">Priority</div>
           <div className="col-span-1">Severity</div>
           <div className="col-span-2">Assigned To</div>
           <div className="col-span-1 -ml-10 text-left">Created</div>
@@ -149,6 +151,36 @@ export function ReportsTable({
               {/* Status */}
               <div className="col-span-1 flex items-center">
                 <StatusBadge status={report.status} />
+              </div>
+
+              {/* Priority */}
+              <div className="col-span-1 flex items-center">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        report.priority_label === "Critical" && "bg-red-100 text-red-800 border-red-300",
+                        report.priority_label === "High" && "bg-orange-100 text-orange-800 border-orange-300",
+                        report.priority_label === "Normal" && "bg-gray-100 text-gray-800 border-gray-300"
+                      )}
+                    >
+                      {report.priority_label === "Critical" && "🚨"}
+                      {report.priority_label === "High" && "⚡"}
+                      {report.priority_label === "Normal" && "🕒"}
+                      {" "}
+                      {report.priority_label || "Normal"}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-sm">
+                      Priority: {report.priority_label || "Normal"}
+                      {report.priority_score !== undefined && ` (${Math.round(report.priority_score * 100)}%)`}
+                      <br />
+                      <span className="text-xs text-muted-foreground">Based on severity and legitimacy</span>
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
 
               {/* Severity */}

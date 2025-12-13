@@ -1,30 +1,46 @@
 {
   "compilerOptions": {
+    /* Language & runtime */
     "target": "ES2020",
+    "lib": ["DOM", "DOM.Iterable", "ES2020"],
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
 
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
+    /* Modules */
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "moduleDetection": "force",
-    "noEmit": true,
+
+    /* React */
     "jsx": "react-jsx",
 
-    /* Linting */
+    /* Build behavior */
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "noEmit": true,
+
+    /* Linting / strictness (relaxed, per your request) */
     "strict": false,
+    "noImplicitAny": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noImplicitAny": false,
     "noFallthroughCasesInSwitch": false,
+    "strictNullChecks": false,
 
+    /* Tooling */
+    "skipLibCheck": true,
+
+    /* Aliases */
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+
+  /* 🚨 CRITICAL for unopened files */
+  "include": [
+    "src/**/*",
+    "tailwind.config.ts",
+    "postcss.config.*"
+  ],
+  "exclude": ["node_modules"]
 }
