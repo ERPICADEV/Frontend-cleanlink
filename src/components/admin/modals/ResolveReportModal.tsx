@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { CheckCircle, ArrowLeft, ArrowRight, Loader2, Upload, X } from "lucide-react";
 import {
   Dialog,
@@ -14,12 +14,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import type { Report, ReportStatus } from "@/types/admin";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface ResolveReportModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   report: Report | null;
-  onResolve: (reportId: string, status: ReportStatus, details: string, duplicateId?: string) => void | Promise<void>;
+  onResolve: (reportId: string, status: ReportStatus, details: string, duplicateId?: string, photos?: File[]) => void | Promise<void>;
   isLoading?: boolean;
 }
 
@@ -43,9 +44,12 @@ export function ResolveReportModal({
   const [resolutionStatus, setResolutionStatus] = useState<ResolutionStatus | "">("");
   const [details, setDetails] = useState("");
   const [duplicateId, setDuplicateId] = useState("");
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const isLoading = externalLoading;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const maxDetails = 2000;
   const minDetails = 20;
@@ -70,6 +74,11 @@ export function ResolveReportModal({
       newErrors.duplicate = "Please enter the duplicate report ID";
     }
 
+    // Require at least one photo for resolution (except for invalid/duplicate)
+    if (resolutionStatus === "resolved" && photos.length === 0) {
+      newErrors.photos = "At least one photo is required for resolution";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -90,12 +99,9 @@ export function ResolveReportModal({
 
     const finalStatus: ReportStatus = (resolutionStatus === "cannot_fix" ? "invalid" : resolutionStatus) as ReportStatus;
     
-    // For now, use a placeholder image URL since backend requires cleaned_image_url
-    // In production, this should come from actual image upload
-    const imageUrl = photos.length > 0 ? photos[0] : "https://placeholder.com/after.jpg";
-    
-    await onResolve(report.id, finalStatus, details, resolutionStatus === "duplicate" ? duplicateId : undefined);
-    handleClose();
+    // Pass photos to onResolve - it will handle the upload and close the modal
+    // Don't close here - let the parent component handle closing after success
+    await onResolve(report.id, finalStatus, details, resolutionStatus === "duplicate" ? duplicateId : undefined, photos);
   };
 
   const handleClose = () => {
@@ -104,19 +110,45 @@ export function ResolveReportModal({
     setDetails("");
     setDuplicateId("");
     setPhotos([]);
+    setPhotoPreviews([]);
     setErrors({});
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     onOpenChange(false);
   };
 
-  const handlePhotoAdd = () => {
-    // Simulate adding a photo
-    if (photos.length < 5) {
-      setPhotos([...photos, `photo-${Date.now()}.jpg`]);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      // Filter out non-image files
+      const imageFiles = newFiles.filter(file => file.type.startsWith('image/'));
+      
+      if (imageFiles.length !== newFiles.length) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Only image files are allowed.',
+          variant: 'destructive',
+        });
+      }
+      
+      const filesToAdd = imageFiles.slice(0, 5 - photos.length);
+      setPhotos(prev => [...prev, ...filesToAdd]);
+      
+      // Create previews
+      filesToAdd.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPhotoPreviews(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
     }
   };
 
   const handlePhotoRemove = (index: number) => {
     setPhotos(photos.filter((_, i) => i !== index));
+    setPhotoPreviews(photoPreviews.filter((_, i) => i !== index));
   };
 
   if (!report) return null;
@@ -242,16 +274,26 @@ export function ResolveReportModal({
 
             {/* Photo Upload */}
             <div className="space-y-2">
-              <Label>Before/After Photos (Optional)</Label>
+              <Label>
+                After-Clean Photo 
+                {resolutionStatus === "resolved" && <span className="text-destructive">*</span>}
+              </Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                {resolutionStatus === "resolved" 
+                  ? "Upload a photo showing the issue has been resolved (required for resolution)"
+                  : "Upload a photo if available (optional for invalid/duplicate reports)"}
+              </p>
               <div className="flex flex-wrap gap-2">
-                {photos.map((photo, index) => (
+                {photoPreviews.map((preview, index) => (
                   <div
-                    key={photo}
-                    className="relative w-20 h-20 bg-muted rounded-lg flex items-center justify-center group"
+                    key={index}
+                    className="relative w-20 h-20 rounded-lg overflow-hidden group"
                   >
-                    <span className="text-xs text-muted-foreground">
-                      Photo {index + 1}
-                    </span>
+                    <img
+                      src={preview}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
                     <button
                       onClick={() => handlePhotoRemove(index)}
                       className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -261,15 +303,28 @@ export function ResolveReportModal({
                   </div>
                 ))}
                 {photos.length < 5 && (
-                  <button
-                    onClick={handlePhotoAdd}
-                    className="w-20 h-20 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                  <label
+                    className="w-20 h-20 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
                   >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      multiple
+                    />
                     <Upload className="w-5 h-5" />
                     <span className="text-xs mt-1">Add</span>
-                  </button>
+                  </label>
                 )}
               </div>
+              {errors.photos && (
+                <p className="text-sm text-destructive">{errors.photos}</p>
+              )}
+              {photos.length === 0 && resolutionStatus === "resolved" && !errors.photos && (
+                <p className="text-sm text-muted-foreground">At least one photo is required for resolution</p>
+              )}
             </div>
           </div>
         )}

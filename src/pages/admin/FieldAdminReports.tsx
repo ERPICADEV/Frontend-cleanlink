@@ -158,23 +158,65 @@ export default function FieldAdminReports() {
     reportId: string,
     status: ReportStatus,
     details: string,
-    duplicateId?: string
+    duplicateId?: string,
+    photos?: File[]
   ) => {
     try {
-      // Backend requires cleaned_image_url, so we'll use a placeholder for now
-      // In production, this should come from the image upload in the modal
-      await resolveReport(reportId, {
-        cleaned_image_url: "https://placeholder.com/after.jpg", // TODO: Get from modal upload
-        notes: details,
-        status: status === "resolved" ? "resolved" : status === "duplicate" ? "duplicate" : "cannot_fix",
-      });
-      queryClient.invalidateQueries({ queryKey: ['assignedReports'] });
-      toast({
-        title: 'Report resolved',
-        description: 'Report has been resolved successfully.',
-      });
-      setIsResolveModalOpen(false);
-      setSelectedReport(null);
+      // If status is "resolved", submit for approval instead of directly resolving
+      // This ensures it goes through the approval workflow and shows in pending approvals
+      if (status === "resolved") {
+        // Upload images if provided
+        if (!photos || photos.length === 0) {
+          toast({
+            title: 'Error',
+            description: 'A photo is required when resolving a report.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        const photoUrls = await Promise.all(photos.map((file) => uploadImage(file)));
+        
+        // Submit for approval - this will set status to pending_approval
+        // Note: The mutation's onSuccess handler will invalidate queries and show a toast
+        await submitApprovalMutation.mutateAsync({
+          reportId,
+          data: {
+            completion_details: details,
+            photos: photoUrls,
+          },
+        });
+        
+        // Close modal after successful submission
+        setIsResolveModalOpen(false);
+        setSelectedReport(null);
+      } else {
+        // For invalid/duplicate, directly resolve (no approval needed)
+        // Note: status is already "invalid" (cannot_fix was converted to invalid in modal)
+        let cleanedImageUrl = "";
+        if (photos && photos.length > 0) {
+          cleanedImageUrl = await uploadImage(photos[0]);
+        } else {
+          // For invalid/duplicate, use a placeholder if no image provided
+          cleanedImageUrl = "https://placeholder.com/after.jpg";
+        }
+
+        await resolveReport(reportId, {
+          cleaned_image_url: cleanedImageUrl,
+          notes: details,
+          status: status === "duplicate" ? "duplicate" : "invalid",
+        });
+        
+        queryClient.invalidateQueries({ queryKey: ['assignedReports'] });
+        toast({
+          title: 'Report resolved',
+          description: 'Report has been marked as ' + (status === "duplicate" ? "duplicate" : "invalid") + '.',
+        });
+        
+        // Close modal after successful resolution
+        setIsResolveModalOpen(false);
+        setSelectedReport(null);
+      }
     } catch (error: any) {
       toast({
         title: 'Error',
