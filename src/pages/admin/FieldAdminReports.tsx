@@ -41,6 +41,7 @@ export default function FieldAdminReports() {
     { value: 'assigned', label: 'Assigned' },
     { value: 'in_progress', label: 'In Progress' },
     { value: 'pending_approval', label: 'Pending Approval' },
+    { value: 'rejected_by_superadmin', label: 'Rejected (Needs Revision)' },
     { value: 'resolved', label: 'Resolved' },
   ];
 
