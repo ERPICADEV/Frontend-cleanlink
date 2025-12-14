@@ -139,8 +139,8 @@ export const useNotifications = () => {
       }
     },
     onSuccess: async (data, notificationId) => {
-      // Immediately refetch unread count to ensure accuracy
-      // Use refetchQueries with exact: false to catch all related queries
+      // Immediately invalidate and refetch unread count to ensure accuracy
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
       await queryClient.refetchQueries({ 
         queryKey: ["notifications-unread-count"],
         exact: false 
@@ -168,7 +168,8 @@ export const useNotifications = () => {
     onSettled: async () => {
       // Refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      // Force refetch with exact: false to catch all variations
+      // Force refetch unread count
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
       await queryClient.refetchQueries({ 
         queryKey: ["notifications-unread-count"],
         exact: false 
@@ -178,6 +179,44 @@ export const useNotifications = () => {
 
   const notifications: Notification[] =
     notificationsQuery.data?.pages.flatMap((page) => page.data) ?? [];
+
+  // Mutation to mark all notifications as read
+  const markAllAsReadMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.patch<{ success: boolean; count: number }>(
+        '/notifications/read-all'
+      );
+      return data;
+    },
+    onSuccess: async () => {
+      // Update all notifications in cache to read
+      queryClient.setQueriesData(
+        { queryKey: ["notifications"] },
+        (old: any) => {
+          if (!old || !old.pages) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: NotificationsResponse) => ({
+              ...page,
+              data: page.data.map((notif: Notification) => ({
+                ...notif,
+                isRead: true,
+              })),
+            })),
+          };
+        }
+      );
+      // Reset unread count to 0
+      queryClient.setQueryData<number>(["notifications-unread-count"], 0);
+      // Invalidate and refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
+      await queryClient.refetchQueries({ 
+        queryKey: ["notifications-unread-count"],
+        exact: false 
+      });
+    },
+  });
 
   return {
     notifications,
@@ -189,6 +228,8 @@ export const useNotifications = () => {
     isFetchingNextPage: notificationsQuery.isFetchingNextPage,
     markAsRead: (notificationId: string) => markAsReadMutation.mutate(notificationId),
     isMarkingAsRead: markAsReadMutation.isPending,
+    markAllAsRead: () => markAllAsReadMutation.mutate(),
+    isMarkingAllAsRead: markAllAsReadMutation.isPending,
     refetch: () => {
       notificationsQuery.refetch();
       unreadCountQuery.refetch();

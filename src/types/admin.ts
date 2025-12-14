@@ -1,4 +1,4 @@
-export type ReportStatus = "pending" | "assigned" | "resolved" | "flagged" | "in_progress" | "pending_approval" | "duplicate" | "community_verified" | "invalid";
+export type ReportStatus = "pending" | "assigned" | "resolved" | "flagged" | "in_progress" | "pending_approval" | "rejected_by_superadmin" | "duplicate" | "community_verified" | "invalid";
 export type ReportCategory = "pothole" | "garbage" | "flooding" | "street_maintenance" | "traffic" | "other";
 export type ActionType = "created" | "updated" | "assigned" | "resolved" | "flagged" | "duplicate";
 

@@ -146,8 +146,8 @@ const MapExplorer = ({ category, onSelectReport }: MapExplorerProps) => {
   }, [data]);
 
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden mb-4">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+    <div className="bg-card border border-border rounded-lg overflow-hidden mb-4 relative z-0">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border relative z-10">
         <div>
           <p className="text-sm font-semibold">Live civic issues map</p>
           <p className="text-xs text-muted-foreground">
@@ -157,7 +157,7 @@ const MapExplorer = ({ category, onSelectReport }: MapExplorerProps) => {
         {isFetching && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
       </div>
 
-      <div className="relative h-80">
+      <div className="relative h-80 z-0 isolate">
         {(() => {
           const MapContainerAny = MapContainer as any;
           const TileLayerAny = TileLayer as any;
@@ -169,7 +169,7 @@ const MapExplorer = ({ category, onSelectReport }: MapExplorerProps) => {
               zoom={12}
               minZoom={4}
               scrollWheelZoom
-              className="h-full w-full"
+              className="h-full w-full z-0"
             >
               <BoundsTracker onBoundsChange={handleBoundsChange} />
               <TileLayerAny
@@ -219,7 +219,7 @@ const MapExplorer = ({ category, onSelectReport }: MapExplorerProps) => {
           );
         })()}
 
-        <div className="absolute left-3 top-3 z-[500] flex flex-wrap gap-2">
+        <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-2">
           {statusLegend.map((item) => (
             <span
               key={item.label}
@@ -234,12 +234,12 @@ const MapExplorer = ({ category, onSelectReport }: MapExplorerProps) => {
           ))}
         </div>
 
-        <div className="absolute right-3 bottom-3 z-[500] bg-background/90 border border-border rounded-full px-3 py-1 text-xs font-medium shadow">
+        <div className="absolute right-3 bottom-3 z-10 bg-background/90 border border-border rounded-full px-3 py-1 text-xs font-medium shadow">
           {featureCount} reports in this view
         </div>
 
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-[600]">
+          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-20">
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               <p className="text-sm text-muted-foreground">Loading map data…</p>
@@ -248,7 +248,7 @@ const MapExplorer = ({ category, onSelectReport }: MapExplorerProps) => {
         )}
 
         {mapReady && !isLoading && featureCount === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-[400]">
+          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
             <p className="text-sm text-muted-foreground">
               No reports in this area yet. Try zooming out.
             </p>

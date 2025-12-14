@@ -43,6 +43,10 @@ const statusConfig: Record<ReportStatus, { label: string; className: string }> =
     label: "Verified",
     className: "bg-blue-100 text-blue-800 border-blue-200",
   },
+  rejected_by_superadmin: {
+    label: "Rejected - Needs Revision",
+    className: "bg-red-100 text-red-800 border-red-200",
+  },
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {

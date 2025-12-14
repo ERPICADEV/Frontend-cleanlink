@@ -65,7 +65,7 @@ const Home = () => {
       <Header />
       
       {/* Region Strip - Clean & Minimal */}
-      <div className="border-b border-border bg-card">
+      <div className="border-b border-border bg-card relative z-40">
         <div className="container mx-auto px-3 sm:px-4 py-1.5 flex items-center justify-between">
           <RegionSelector />
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

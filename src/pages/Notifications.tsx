@@ -17,6 +17,8 @@ const Notifications = () => {
     isFetchingNextPage,
     fetchNextPage,
     markAsRead,
+    markAllAsRead,
+    isMarkingAllAsRead,
   } = useNotifications();
 
   const handleNotificationClick = (notification: typeof notifications[0]) => {
@@ -185,8 +187,17 @@ const Notifications = () => {
       <div className="container mx-auto px-0 sm:px-4 py-0 sm:py-4">
         <div className="max-w-3xl mx-auto">
             <div className="bg-card sm:rounded-lg sm:border sm:border-border overflow-hidden">
-            <div className="p-4 border-b border-border">
+            <div className="p-4 border-b border-border flex items-center justify-between">
               <h1 className="text-xl font-bold">Notifications</h1>
+              {notifications.length > 0 && (
+                <button
+                  onClick={() => markAllAsRead()}
+                  disabled={isMarkingAllAsRead}
+                  className="text-sm text-primary hover:underline disabled:opacity-50"
+                >
+                  {isMarkingAllAsRead ? "Marking..." : "Mark all as read"}
+                </button>
+              )}
             </div>
               {renderContent()}
           </div>
