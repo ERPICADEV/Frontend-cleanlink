@@ -30,8 +30,8 @@ export default function AdminDashboard() {
         {/* Page Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Overview of reports and admin activity
+          <p className="text-sm text-muted-foreground">
+            Overview of reports and admin activity.
           </p>
         </div>
 

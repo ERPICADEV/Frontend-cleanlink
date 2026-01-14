@@ -2,6 +2,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { BarChart3, TrendingUp, Users, MapPin, Loader2 } from "lucide-react";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { useAdminReports } from "@/hooks/useAdminReports";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useMemo } from "react";
 
 export default function AdminAnalytics() {
@@ -87,194 +88,221 @@ export default function AdminAnalytics() {
         {/* Page Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Analytics</h1>
-          <p className="text-muted-foreground">
-            Detailed insights and metrics for your region
+          <p className="text-sm text-muted-foreground">
+            Detailed insights and metrics for your region.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {/* Reports Over Time - Placeholder for future chart */}
-          <div className="bg-card rounded-xl border border-border p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <TrendingUp className="w-5 h-5 text-primary" />
+          <Card className="border-none shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle className="text-base font-semibold">Reports Over Time</CardTitle>
+                <CardDescription>Track reporting volume trends.</CardDescription>
               </div>
-              <h3 className="font-semibold">Reports Over Time</h3>
-            </div>
-            {loading ? (
-              <div className="h-48 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <TrendingUp className="h-5 w-5 text-primary" />
               </div>
-            ) : (
-              <div className="h-48 flex items-center justify-center bg-muted/30 rounded-lg">
-                <div className="text-center">
-                  <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground/50 mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Chart visualization coming soon
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Total reports: {reports?.length || 0}
-                  </p>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex h-48 items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="flex h-48 items-center justify-center rounded-2xl bg-muted/40">
+                  <div className="text-center">
+                    <BarChart3 className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" />
+                    <p className="text-sm text-muted-foreground">
+                      Chart visualization coming soon
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Total reports: {reports?.length || 0}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Resolution Rate */}
-          <div className="bg-card rounded-xl border border-border p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-500/20">
-                <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
+          <Card className="border-none shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle className="text-base font-semibold">Resolution Rate</CardTitle>
+                <CardDescription>Your team&apos;s performance this month.</CardDescription>
               </div>
-              <h3 className="font-semibold">Resolution Rate</h3>
-            </div>
-            {loading ? (
-              <div className="h-48 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
               </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="text-center py-4">
-                  <p className="text-5xl font-bold text-foreground">{resolutionRate}%</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Resolution rate this month
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {stats?.resolvedThisMonth || 0} resolved / {stats?.pendingReports || 0} pending
-                  </p>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex h-48 items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-green-500 rounded-full transition-all"
-                    style={{ width: `${resolutionRate}%` }}
-                  />
+              ) : (
+                <div className="space-y-4">
+                  <div className="py-3 text-center">
+                    <p className="text-5xl font-bold text-foreground">{resolutionRate}%</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Resolution rate this month
+                    </p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {stats?.resolvedThisMonth || 0} resolved / {stats?.pendingReports || 0} pending
+                    </p>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-emerald-500 transition-all"
+                      style={{ width: `${resolutionRate}%` }}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Reports by Category */}
-          <div className="bg-card rounded-xl border border-border p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <BarChart3 className="w-5 h-5 text-primary" />
+          <Card className="border-none shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle className="text-base font-semibold">Reports by Category</CardTitle>
+                <CardDescription>See where residents are reporting the most.</CardDescription>
               </div>
-              <h3 className="font-semibold">Reports by Category</h3>
-            </div>
-            {loading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-8 bg-muted animate-pulse rounded" />
-                ))}
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <BarChart3 className="h-5 w-5 text-primary" />
               </div>
-            ) : reportsByCategory.length > 0 ? (
-              <div className="space-y-3">
-                {reportsByCategory.map((item: any, i: number) => {
-                  const maxCount = Math.max(...reportsByCategory.map((c: any) => c.count));
-                  const colors = [
-                    "bg-red-500",
-                    "bg-green-500",
-                    "bg-blue-500",
-                    "bg-purple-500",
-                    "bg-orange-500",
-                  ];
-                  return (
-                    <div key={item.category || i} className="space-y-1">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="capitalize">
-                          {item.category?.replace(/_/g, " ") || "Other"}
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="h-8 animate-pulse rounded-full bg-muted" />
+                  ))}
+                </div>
+              ) : reportsByCategory.length > 0 ? (
+                <div className="space-y-3">
+                  {reportsByCategory.map((item: any, i: number) => {
+                    const maxCount = Math.max(...reportsByCategory.map((c: any) => c.count));
+                    const colors = [
+                      "bg-red-500",
+                      "bg-emerald-500",
+                      "bg-blue-500",
+                      "bg-purple-500",
+                      "bg-orange-500",
+                    ];
+                    return (
+                      <div key={item.category || i} className="space-y-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="capitalize">
+                            {item.category?.replace(/_/g, " ") || "Other"}
+                          </span>
+                          <span className="font-medium">{item.count}</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className={`h-full rounded-full ${colors[i % colors.length]} transition-all`}
+                            style={{ width: `${(item.count / maxCount) * 100 || 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  No category data available
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Top Reporters */}
+          <Card className="border-none shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle className="text-base font-semibold">Top Active Reporters</CardTitle>
+                <CardDescription>Residents who report issues most often.</CardDescription>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                <Users className="h-5 w-5 text-blue-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="h-8 animate-pulse rounded-full bg-muted" />
+                  ))}
+                </div>
+              ) : topReporters.length > 0 ? (
+                <div className="space-y-3">
+                  {topReporters.map((user, i) => (
+                    <div key={i} className="flex items-center justify-between py-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 text-center text-sm">{user.badge || i + 1}</span>
+                        <span className="max-w-[10rem] truncate text-sm font-medium md:max-w-none">
+                          {user.name}
                         </span>
+                      </div>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {user.count} {user.count === 1 ? "report" : "reports"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  No reporter data available
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Reports by Region */}
+          <Card className="border-none shadow-sm md:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle className="text-base font-semibold">Reports by Region</CardTitle>
+                <CardDescription>Understand which areas need the most attention.</CardDescription>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
+                <MapPin className="h-5 w-5 text-purple-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-8 animate-pulse rounded-full bg-muted" />
+                  ))}
+                </div>
+              ) : reportsByRegion.length > 0 ? (
+                <div className="space-y-3">
+                  {reportsByRegion.map((item) => (
+                    <div key={item.region} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span>{item.region}</span>
                         <span className="font-medium">{item.count}</span>
                       </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-2 overflow-hidden rounded-full bg-muted">
                         <div
-                          className={`h-full ${colors[i % colors.length]} rounded-full transition-all`}
-                          style={{ width: `${(item.count / maxCount) * 100}%` }}
+                          className="h-full rounded-full bg-purple-500 transition-all"
+                          style={{ width: `${item.percent}%` }}
                         />
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                No category data available
-              </p>
-            )}
-          </div>
-
-          {/* Top Reporters */}
-          <div className="bg-card rounded-xl border border-border p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-500/20">
-                <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h3 className="font-semibold">Top Active Reporters</h3>
-            </div>
-            {loading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-8 bg-muted animate-pulse rounded" />
-                ))}
-              </div>
-            ) : topReporters.length > 0 ? (
-              <div className="space-y-3">
-                {topReporters.map((user, i) => (
-                  <div key={i} className="flex items-center justify-between py-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 text-center">{user.badge || i + 1}</span>
-                      <span className="font-medium truncate">{user.name}</span>
-                    </div>
-                    <span className="text-sm text-muted-foreground shrink-0">
-                      {user.count} {user.count === 1 ? "report" : "reports"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                No reporter data available
-              </p>
-            )}
-          </div>
-
-          {/* Reports by Region */}
-          <div className="bg-card rounded-xl border border-border p-6 md:col-span-2">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-500/20">
-                <MapPin className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <h3 className="font-semibold">Reports by Region</h3>
-            </div>
-            {loading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-8 bg-muted animate-pulse rounded" />
-                ))}
-              </div>
-            ) : reportsByRegion.length > 0 ? (
-              <div className="space-y-3">
-                {reportsByRegion.map((item) => (
-                  <div key={item.region} className="space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <span>{item.region}</span>
-                      <span className="font-medium">{item.count}</span>
-                    </div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-purple-500 rounded-full transition-all"
-                        style={{ width: `${item.percent}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                No region data available
-              </p>
-            )}
-          </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  No region data available
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </AdminLayout>
