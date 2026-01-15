@@ -114,10 +114,16 @@ const Profile = () => {
                     <h1 className="text-2xl font-bold mb-1">
                       {user?.username || "Anonymous Citizen"}
                     </h1>
-                    <p className="text-muted-foreground flex items-center gap-1 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate("/settings/location")}
+                      className="text-left text-muted-foreground flex items-center gap-1 mb-2 hover:text-primary transition-colors"
+                    >
                       <MapPin className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate">{regionLabel}</span>
-                    </p>
+                      <span className="truncate underline-offset-2">
+                        {regionLabel}
+                      </span>
+                    </button>
                     {user?.badges && user.badges.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-2">
                         {user.badges.map((badge) => (

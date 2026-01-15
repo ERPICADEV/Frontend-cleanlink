@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Gift, CheckCircle2 } from "lucide-react";
-import * as confetti from "canvas-confetti";
+import confetti from "canvas-confetti";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import type { Reward } from "@/types/rewards";

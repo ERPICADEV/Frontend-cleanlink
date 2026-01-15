@@ -9,12 +9,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { handleApiError } from "@/lib/errorHandler";
 import { uploadImage } from "@/services/reportService";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
-  const { login, signup, user } = useAuth();
+  const { login, signup, user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -27,23 +28,21 @@ const Login = () => {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [shouldRedirect, setShouldRedirect] = useState(false);
-
-  // Handle role-based redirect after successful login
   useEffect(() => {
-    if (shouldRedirect && user) {
-      if (user.role === 'super_admin') {
-        navigate('/admin/dashboard');
-      } else if (user.role === 'field_admin') {
-        navigate('/field-admin/dashboard');
-      } else if (redirectTo && redirectTo !== '/') {
-        navigate(redirectTo);
-      } else {
-        navigate('/');
-      }
-      setShouldRedirect(false);
+    if (!user || !isAuthenticated) return;
+
+    // Role-aware redirect after any successful auth (password or Google)
+    if (user.role === "super_admin") {
+      navigate("/admin/dashboard", { replace: true });
+    } else if (user.role === "field_admin") {
+      navigate("/field-admin/dashboard", { replace: true });
+    } else if (redirectTo && redirectTo !== "/") {
+      navigate(redirectTo, { replace: true });
+    } else {
+      // Default for regular users
+      navigate("/profile", { replace: true });
     }
-  }, [user, shouldRedirect, navigate, redirectTo]);
+  }, [user, isAuthenticated, navigate, redirectTo]);
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -110,9 +109,6 @@ const Login = () => {
         });
         toast({ title: "Account created", description: "You're all set!" });
       }
-      
-      // Trigger redirect check after user state updates
-      setShouldRedirect(true);
     } catch (error) {
       // Use the reusable error handler - it prioritizes message over fields
       const errorMessage = handleApiError(error, {
@@ -156,6 +152,20 @@ const Login = () => {
                 : "Create an account and start reporting civic issues."}
             </p>
           </div>
+
+          {mode === "login" && (
+            <>
+              <GoogleSignInButton />
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-background px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+            </>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">

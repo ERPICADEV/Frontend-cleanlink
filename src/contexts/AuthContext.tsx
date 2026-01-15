@@ -37,6 +37,7 @@ interface AuthContextValue {
   token: string | null;
   isBootstrapping: boolean;
   login: (payload: { email: string; password: string }) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   signup: (payload: {
     email: string;
     password: string;
@@ -188,6 +189,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [handleAuthResponse]
   );
 
+  const loginWithGoogle = useCallback(
+    async (idToken: string) => {
+      if (!idToken) {
+        throw new Error("Missing Google ID token");
+      }
+      const { data } = await apiClient.post<{
+        user: AuthUser;
+        token: string;
+        refresh_token: string;
+      }>("/auth/google", { idToken });
+      handleAuthResponse(data);
+    },
+    [handleAuthResponse]
+  );
+
   const signup = useCallback(
     async ({
       email,
@@ -242,12 +258,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       token,
       isBootstrapping,
       login,
+      loginWithGoogle,
       signup,
       logout,
       refreshProfile,
       isAuthenticated: Boolean(user && token),
     }),
-    [user, token, isBootstrapping, login, signup, logout, refreshProfile]
+    [user, token, isBootstrapping, login, loginWithGoogle, signup, logout, refreshProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
