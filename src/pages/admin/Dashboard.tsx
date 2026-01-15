@@ -1,6 +1,7 @@
 import { FileText, UserCheck, CheckCircle2, Clock, Loader2 } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { StatCard } from "@/components/admin/dashboard/StatCard";
+import { CardLoadingState } from "@/components/admin/shared/LoadingState";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { useMemo } from "react";
 

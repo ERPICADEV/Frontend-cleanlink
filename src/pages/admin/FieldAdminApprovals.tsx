@@ -13,6 +13,7 @@ import { CheckCircle, XCircle, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { usePendingApprovals } from "@/hooks/usePendingApprovals";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function FieldAdminApprovals() {
   const {
@@ -52,12 +53,27 @@ export default function FieldAdminApprovals() {
       </div>
 
       {isLoading ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Clock className="h-8 w-8 text-muted-foreground mb-2 animate-spin" />
-            <p className="text-muted-foreground">Loading approvals…</p>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-32 w-full rounded-lg" />
+                <Skeleton className="h-10 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : pendingApprovals.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -145,14 +161,19 @@ export default function FieldAdminApprovals() {
                         [item.id]: e.target.value,
                       }))
                     }
-                    className="mb-3"
+                    className="mb-2"
                   />
+                  {rejectionReasons[item.id] && rejectionReasons[item.id].trim().length > 0 && rejectionReasons[item.id].trim().length < 10 && (
+                    <p className="text-xs text-amber-600 mb-2">
+                      Please enter at least 10 characters for the rejection reason ({rejectionReasons[item.id].trim().length}/10)
+                    </p>
+                  )}
                   <div className="flex gap-2">
                     <Button
                       variant="default"
                       className="flex-1"
                       onClick={() => approve(item.id)}
-                      disabled={isApproving}
+                      disabled={isApproving || isRejecting}
                     >
                       <CheckCircle className="mr-2 h-4 w-4" />
                       Approve
@@ -163,12 +184,13 @@ export default function FieldAdminApprovals() {
                       onClick={() => handleReject(item.id)}
                       disabled={
                         isRejecting ||
+                        isApproving ||
                         !rejectionReasons[item.id] ||
                         rejectionReasons[item.id].trim().length < 10
                       }
                     >
                       <XCircle className="mr-2 h-4 w-4" />
-                      Reject
+                      {isRejecting ? "Rejecting..." : "Reject"}
                     </Button>
                   </div>
                 </div>

@@ -1,6 +1,17 @@
 export type ReportStatus = "pending" | "assigned" | "resolved" | "flagged" | "in_progress" | "pending_approval" | "rejected_by_superadmin" | "duplicate" | "community_verified" | "invalid";
 export type ReportCategory = "pothole" | "garbage" | "flooding" | "street_maintenance" | "traffic" | "other";
-export type ActionType = "created" | "updated" | "assigned" | "resolved" | "flagged" | "duplicate";
+export type ActionType = 
+  | "created" 
+  | "updated" 
+  | "assigned" 
+  | "resolved" 
+  | "flagged" 
+  | "duplicate"
+  | "work_approved"
+  | "work_rejected"
+  | "points_awarded"
+  | "user_level_up"
+  | "report_resolved";
 
 export interface Report {
   id: string;

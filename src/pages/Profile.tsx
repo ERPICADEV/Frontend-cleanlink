@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fetchReports, fetchUserComments, type ReportLocation, type UserComment } from "@/services/reportService";
 import { formatLocationName, formatRelativeTime } from "@/lib/formatters";
 import { useToast } from "@/hooks/use-toast";
+import { ProfileSkeleton } from "@/components/shared/ProfileSkeleton";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ const Profile = () => {
 
   const {
     data: reportData,
-    isLoading,
+    isLoading: isLoadingReports,
   } = useQuery({
     queryKey: ["my-reports", user?.id],
     queryFn: () => fetchReports({ reporter_id: user!.id, limit: 20 }),
@@ -41,6 +42,8 @@ const Profile = () => {
     queryFn: () => fetchUserComments({ limit: 50 }),
     enabled: Boolean(user?.id),
   });
+
+  const isLoading = !user || isLoadingReports || isLoadingComments;
 
   const reports = reportData?.data ?? [];
   const comments = commentsData?.data ?? [];
@@ -88,6 +91,16 @@ const Profile = () => {
         <p className="text-lg font-semibold">Login to access your civic profile</p>
         <Button onClick={() => navigate("/login?redirect=/profile")}>Login</Button>
       </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <>
+        <Header />
+        <ProfileSkeleton />
+        <BottomNav />
+      </>
     );
   }
 
@@ -191,10 +204,20 @@ const Profile = () => {
             </div>
             
             <div className="mb-3">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-medium">{levelInfo?.name || "New Citizen"}</span>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <Badge 
+                  className="text-sm font-semibold px-3 py-1.5"
+                  style={{
+                    backgroundColor: levelInfo?.color ? `${levelInfo.color}15` : undefined,
+                    color: levelInfo?.color || undefined,
+                    borderColor: levelInfo?.color ? `${levelInfo.color}40` : undefined,
+                  }}
+                >
+                  <Award className="w-3.5 h-3.5 mr-1.5" />
+                  {levelInfo?.name || "New Citizen"}
+                </Badge>
                 {levelInfo?.next_level_at && (
-                  <span className="text-muted-foreground">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {Math.max(0, levelInfo.next_level_at - civicPoints)} to next level
                   </span>
                 )}

@@ -8,7 +8,6 @@ import {
   Clock,
   User,
   Share2,
-  Bookmark,
   MessageSquare,
   CheckCircle,
   Loader2,
@@ -83,6 +82,7 @@ import { useCommentActions } from "@/hooks/useCommentActions";
 import { useReportActions } from "@/hooks/useReportActions";
 import { useVote, type VoteState, type VoteValue, calculateVoteChange } from "@/hooks/useVote";
 import { cn } from "@/lib/utils";
+import { PostDetailSkeleton } from "@/components/shared/PostDetailSkeleton";
 
 const statusSteps = [
   { key: "pending", label: "Submitted" },
@@ -628,14 +628,11 @@ const PostDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background pb-20 md:pb-0">
+      <>
         <Header />
-        <main className="container mx-auto px-4 py-10 flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          <p>Loading report…</p>
-        </main>
+        <PostDetailSkeleton />
         <BottomNav />
-      </div>
+      </>
     );
   }
 
@@ -799,24 +796,46 @@ const PostDetail = () => {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <button className="flex items-center gap-1.5 hover:text-primary transition-colors" aria-label="Share this post">
+                <button 
+                  className="flex items-center gap-1.5 hover:text-primary transition-colors" 
+                  aria-label="Share this post"
+                  onClick={async () => {
+                    try {
+                      const url = window.location.href;
+                      await navigator.clipboard.writeText(url);
+                      toast({
+                        title: "Link copied!",
+                        description: "Link copied to clipboard",
+                      });
+                    } catch (err) {
+                      // Fallback for older browsers
+                      const textArea = document.createElement("textarea");
+                      textArea.value = window.location.href;
+                      document.body.appendChild(textArea);
+                      textArea.select();
+                      try {
+                        document.execCommand('copy');
+                        toast({
+                          title: "Link copied!",
+                          description: "Link copied to clipboard",
+                        });
+                      } catch (fallbackErr) {
+                        toast({
+                          title: "Failed to copy",
+                          description: "Please copy the URL manually",
+                          variant: "destructive",
+                        });
+                      }
+                      document.body.removeChild(textArea);
+                    }
+                  }}
+                >
                   <Share2 className="w-4 h-4" />
                   Share
                 </button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Share this post</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button className="flex items-center gap-1.5 hover:text-primary transition-colors" aria-label="Save for later">
-                  <Bookmark className="w-4 h-4" />
-                  Save
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Save for later</p>
               </TooltipContent>
             </Tooltip>
             <Tooltip>

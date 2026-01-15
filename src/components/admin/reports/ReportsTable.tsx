@@ -21,6 +21,7 @@ import { StatusBadge } from "../shared/StatusBadge";
 import { CategoryBadge } from "../shared/CategoryBadge";
 import { SeverityIndicator } from "../shared/SeverityIndicator";
 import { EmptyState } from "../shared/EmptyState";
+import { ReportsTableSkeleton } from "../shared/ReportCardSkeleton";
 import type { Report } from "@/types/admin";
 import { cn } from "@/lib/utils";
 
@@ -45,6 +46,7 @@ export function ReportsTable({
   onViewAudit,
   showAssign = true,
   showResolve = true,
+  isLoading = false,
 }: ReportsTableProps) {
   const allSelected = reports.length > 0 && selectedIds.length === reports.length;
   const someSelected = selectedIds.length > 0 && selectedIds.length < reports.length;
@@ -64,6 +66,10 @@ export function ReportsTable({
       onSelectionChange([...selectedIds, id]);
     }
   };
+
+  if (isLoading) {
+    return <ReportsTableSkeleton rows={5} />;
+  }
 
   if (reports.length === 0) {
     return (

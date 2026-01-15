@@ -6,6 +6,7 @@ import AdminAnalytics from '@/pages/admin/Analytics';
 import AdminSettings from '@/pages/admin/Settings';
 import FieldAdminApprovals from '@/pages/admin/FieldAdminApprovals';
 import RewardsManagement from '@/pages/admin/RewardsManagement';
+import AuditLogsPage from '@/pages/admin/AuditLogs';
 
 export function AdminRoutes() {
   return (
@@ -18,6 +19,7 @@ export function AdminRoutes() {
         <Route path="approvals" element={<FieldAdminApprovals />} />
         <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="settings" element={<AdminSettings />} />
+        <Route path="audit/:reportId" element={<AuditLogsPage />} />
       </Routes>
     </RoleBasedLayout>
   );

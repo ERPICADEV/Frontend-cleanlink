@@ -6,7 +6,11 @@ import {
   CheckCircle, 
   Flag,
   Bot,
-  ChevronDown
+  ChevronDown,
+  XCircle,
+  Award,
+  TrendingUp,
+  FileCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AuditLog, ActionType } from "@/types/admin";
@@ -17,14 +21,22 @@ interface AuditTimelineProps {
   logs: AuditLog[];
 }
 
-const actionConfig: Record<ActionType, { icon: typeof Plus; color: string; bgColor: string }> = {
-  created: { icon: Plus, color: "text-blue-600", bgColor: "bg-blue-100" },
-  updated: { icon: Edit, color: "text-amber-600", bgColor: "bg-amber-100" },
-  assigned: { icon: UserPlus, color: "text-green-600", bgColor: "bg-green-100" },
-  resolved: { icon: CheckCircle, color: "text-purple-600", bgColor: "bg-purple-100" },
-  flagged: { icon: Flag, color: "text-red-600", bgColor: "bg-red-100" },
-  duplicate: { icon: Flag, color: "text-orange-600", bgColor: "bg-orange-100" },
+const actionConfig: Partial<Record<ActionType, { icon: typeof Plus; color: string; bgColor: string; label: string }>> = {
+  created: { icon: Plus, color: "text-blue-600", bgColor: "bg-blue-100", label: "Created" },
+  updated: { icon: Edit, color: "text-amber-600", bgColor: "bg-amber-100", label: "Updated" },
+  assigned: { icon: UserPlus, color: "text-green-600", bgColor: "bg-green-100", label: "Assigned" },
+  resolved: { icon: CheckCircle, color: "text-purple-600", bgColor: "bg-purple-100", label: "Resolved" },
+  report_resolved: { icon: CheckCircle, color: "text-purple-600", bgColor: "bg-purple-100", label: "Resolved" },
+  flagged: { icon: Flag, color: "text-red-600", bgColor: "bg-red-100", label: "Flagged" },
+  duplicate: { icon: Flag, color: "text-orange-600", bgColor: "bg-orange-100", label: "Duplicate" },
+  work_approved: { icon: FileCheck, color: "text-green-600", bgColor: "bg-green-100", label: "Work Approved" },
+  work_rejected: { icon: XCircle, color: "text-red-600", bgColor: "bg-red-100", label: "Work Rejected" },
+  points_awarded: { icon: Award, color: "text-yellow-600", bgColor: "bg-yellow-100", label: "Points Awarded" },
+  user_level_up: { icon: TrendingUp, color: "text-indigo-600", bgColor: "bg-indigo-100", label: "Level Up" },
 };
+
+// Default config for unknown action types
+const defaultConfig = { icon: Edit, color: "text-gray-600", bgColor: "bg-gray-100", label: "Action" };
 
 function ChangeItem({ field, before, after }: { field: string; before: unknown; after: unknown }) {
   const formatValue = (value: unknown): string => {
@@ -45,7 +57,7 @@ function ChangeItem({ field, before, after }: { field: string; before: unknown; 
 
 function TimelineEvent({ log, isLast }: { log: AuditLog; isLast: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
-  const config = actionConfig[log.actionType];
+  const config = actionConfig[log.actionType] || defaultConfig;
   const Icon = config.icon;
   const isSystem = log.actor.toLowerCase().includes("system") || log.actor.toLowerCase().includes("bot");
   const changes = Object.entries(log.changes);
@@ -75,8 +87,8 @@ function TimelineEvent({ log, isLast }: { log: AuditLog; isLast: boolean }) {
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className={cn("font-semibold capitalize", config.color)}>
-                    {log.actionType}
+                  <span className={cn("font-semibold", config.color)}>
+                    {config.label || log.actionType.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
                   </span>
                   {isSystem && (
                     <span className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded">

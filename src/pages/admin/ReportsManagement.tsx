@@ -23,7 +23,7 @@ import { AssignReportModal } from "@/components/admin/modals/AssignReportModal";
 import { useAdminReports } from "@/hooks/useAdminReports";
 import { useAdmin } from "@/hooks/useAdmin";
 import type { Report, ReportsFilter, ReportStatus } from "@/types/admin";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ReportsTableSkeleton } from "@/components/admin/shared/ReportCardSkeleton";
 
 // Mock data (fallback)
 const mockReports: Report[] = [
@@ -265,11 +265,7 @@ export default function ReportsManagement() {
 
         {/* Reports Table */}
         {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded" />
-            ))}
-          </div>
+          <ReportsTableSkeleton rows={pageSize} />
         ) : (
           <ReportsTable
             reports={paginatedReports}
@@ -279,6 +275,7 @@ export default function ReportsManagement() {
             onResolve={() => {}}
             showResolve={false}
             onViewAudit={handleViewAudit}
+            isLoading={false}
           />
         )}
 
