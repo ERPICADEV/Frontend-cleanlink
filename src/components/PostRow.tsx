@@ -1,3 +1,4 @@
+import React, { memo } from "react";
 import { ChevronUp, ChevronDown, MessageSquare, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { extractFirstImage, formatCategoryLabel, formatLocationName, formatRelativeTime } from "@/lib/formatters";
@@ -11,6 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import OptimizedImage from "@/components/OptimizedImage";
 
 interface PostRowProps {
   post: ReportSummary;
@@ -29,7 +31,7 @@ const getCategoryTone = (category?: string) => {
   return tones[category?.toLowerCase() ?? ""] || "bg-muted text-muted-foreground";
 };
 
-const PostRow = ({ post, onClick }: PostRowProps) => {
+const PostRowComponent = ({ post, onClick }: PostRowProps) => {
   const voteState: VoteState = {
     upvotes: post.upvotes || 0,
     downvotes: post.downvotes || 0,
@@ -186,7 +188,7 @@ const PostRow = ({ post, onClick }: PostRowProps) => {
         {/* Thumbnail */}
         {imageUrl && (
           <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0">
-            <img
+            <OptimizedImage
               src={imageUrl}
               alt={post.title}
               className="w-full h-full object-cover rounded-lg cursor-pointer"
@@ -200,4 +202,21 @@ const PostRow = ({ post, onClick }: PostRowProps) => {
   );
 };
 
-export default PostRow;
+const areEqual = (prev: PostRowProps, next: PostRowProps) => {
+  const p = prev.post;
+  const n = next.post;
+  return (
+    p.id === n.id &&
+    p.upvotes === n.upvotes &&
+    p.downvotes === n.downvotes &&
+    p.user_vote === n.user_vote &&
+    p.comments_count === n.comments_count &&
+    p.status === n.status &&
+    p.category === n.category &&
+    p.description === n.description &&
+    p.title === n.title &&
+    prev.onClick === next.onClick
+  );
+};
+
+export default memo(PostRowComponent, areEqual);

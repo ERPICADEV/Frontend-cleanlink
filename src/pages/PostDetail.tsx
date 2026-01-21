@@ -83,6 +83,7 @@ import { useReportActions } from "@/hooks/useReportActions";
 import { useVote, type VoteState, type VoteValue, calculateVoteChange } from "@/hooks/useVote";
 import { cn } from "@/lib/utils";
 import { PostDetailSkeleton } from "@/components/shared/PostDetailSkeleton";
+import OptimizedImage from "@/components/OptimizedImage";
 
 const statusSteps = [
   { key: "pending", label: "Submitted" },
@@ -461,19 +462,24 @@ const PostDetail = () => {
 
   // Safely derive image-related data before any conditional returns to keep hook order stable
   const imageUrl = report ? extractFirstImage(report.images) : undefined;
-  const resolutionPhotos = report?.resolutionPhotos || [];
+  const resolutionPhotos = Array.isArray(report?.resolutionPhotos)
+    ? report!.resolutionPhotos.map((p) => extractFirstImage([p]) || p)
+    : [];
+  const heroImage = imageUrl || resolutionPhotos[0] || null;
 
   // Combine all images for lightbox navigation
   const allImages = useMemo(() => {
     const images: { url: string; alt: string }[] = [];
-    if (imageUrl) {
-      images.push({ url: imageUrl, alt: report?.title || "Report image" });
+    if (heroImage) {
+      images.push({ url: heroImage, alt: report?.title || "Report image" });
     }
     resolutionPhotos.forEach((photo, index) => {
+      // Avoid duplicate if resolutionPhotos[0] already used as hero
+      if (photo === heroImage && index === 0) return;
       images.push({ url: photo, alt: `Resolved photo ${index + 1}` });
     });
     return images;
-  }, [imageUrl, resolutionPhotos, report?.title]);
+  }, [heroImage, resolutionPhotos, report?.title]);
 
   const currentImage = selectedImageIndex !== null ? allImages[selectedImageIndex] : null;
 
@@ -919,10 +925,12 @@ const PostDetail = () => {
               onClick={() => handleImageClick(0)}
               className="w-full cursor-pointer hover:opacity-90 transition-opacity"
             >
-              <img
+              <OptimizedImage
                 src={imageUrl}
                 alt={report.title}
-                className="w-full max-h-[500px] object-cover"
+              className="w-full max-h-[500px] object-cover"
+              width={1200}
+              height={675}
               />
             </button>
           )}
@@ -939,7 +947,7 @@ const PostDetail = () => {
                     className="relative aspect-video overflow-hidden rounded-md border bg-muted hover:opacity-90 transition-opacity cursor-pointer"
                     onClick={() => handleImageClick(imageUrl ? index + 1 : index)}
                   >
-                    <img
+                    <OptimizedImage
                       src={photo}
                       alt={`Resolved photo ${index + 1}`}
                       className="h-full w-full object-cover"
@@ -1096,7 +1104,7 @@ const PostDetail = () => {
               )}
               
               {/* Image */}
-              <img
+              <OptimizedImage
                 src={currentImage.url}
                 alt={currentImage.alt}
                 className="max-w-full max-h-full object-contain"

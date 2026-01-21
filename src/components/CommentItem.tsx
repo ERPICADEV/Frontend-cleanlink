@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, memo } from "react";
 import { ArrowUp, ArrowDown, MoreVertical, Edit, Trash2, X, Check, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -446,4 +446,33 @@ const CommentItem = ({
   );
 };
 
-export default CommentItem;
+const areEqual = (prev: CommentItemProps, next: CommentItemProps) => {
+  return (
+    prev.id === next.id &&
+    prev.username === next.username &&
+    prev.text === next.text &&
+    prev.timestamp === next.timestamp &&
+    prev.updatedAt === next.updatedAt &&
+    prev.upvotes === next.upvotes &&
+    prev.downvotes === next.downvotes &&
+    prev.userVote === next.userVote &&
+    prev.authorId === next.authorId &&
+    prev.currentUserId === next.currentUserId &&
+    prev.isAdmin === next.isAdmin &&
+    prev.isEditing === next.isEditing &&
+    prev.isDeleting === next.isDeleting &&
+    prev.disabled === next.disabled &&
+    prev.depth === next.depth &&
+    prev.hasReplies === next.hasReplies &&
+    prev.replyCount === next.replyCount &&
+    prev.isCollapsed === next.isCollapsed &&
+    prev.onReply === next.onReply &&
+    prev.onVote === next.onVote &&
+    prev.onUserClick === next.onUserClick &&
+    prev.onEdit === next.onEdit &&
+    prev.onDelete === next.onDelete &&
+    prev.onToggleCollapse === next.onToggleCollapse
+  );
+};
+
+export default memo(CommentItem, areEqual);

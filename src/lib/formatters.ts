@@ -81,18 +81,48 @@ export const formatLocationName = (location?: ReportLocation | RegionLocation | 
 
 type ImageObject = { url?: string };
 
+// Normalize backend-relative image URLs to absolute (API origin)
+const apiBase =
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
+  "http://localhost:3000/api/v1";
+// Try to strip trailing "/api/v1" to get origin
+const apiOrigin = apiBase.replace(/\/api\/v1$/, "");
+const normalizeImageUrl = (url: string) => {
+  if (!url) return url;
+  if (url.startsWith("/uploads")) return `${apiOrigin}${url}`;
+  return url;
+};
+
 export const extractFirstImage = (images?: unknown) => {
   if (!images) return null;
   if (Array.isArray(images)) {
     const [first] = images;
-    if (typeof first === "string") return first;
+    if (typeof first === "string") return normalizeImageUrl(first);
     if (typeof first === "object" && first && "url" in first) {
-      return (first as ImageObject).url ?? null;
+      return normalizeImageUrl((first as ImageObject).url ?? null);
     }
   }
-  if (typeof images === "string") return images;
+  if (typeof images === "string") {
+    // Handle legacy stringified arrays: '["data:..."]'
+    const trimmed = images.trim();
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const first = parsed[0];
+          if (typeof first === "string") return normalizeImageUrl(first);
+          if (first && typeof first === "object" && "url" in first) {
+            return normalizeImageUrl((first as ImageObject).url ?? null);
+          }
+        }
+      } catch {
+        // fall through to returning the raw string
+      }
+    }
+    return normalizeImageUrl(images);
+  }
   if (typeof images === "object" && images && "url" in images) {
-    return (images as ImageObject).url ?? null;
+    return normalizeImageUrl((images as ImageObject).url ?? null);
   }
   return null;
 };
