@@ -137,7 +137,7 @@ const Profile = () => {
                         {regionLabel}
                       </span>
                     </button>
-                    {user?.badges && user.badges.length > 0 && (
+                    {Array.isArray(user?.badges) && user.badges.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-2">
                         {user.badges.map((badge) => (
                           <Badge key={badge} variant="outline" className="text-xs">
