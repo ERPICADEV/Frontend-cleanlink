@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Upload, MapPin, Loader2, Lightbulb, X } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,18 +22,44 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const categories = ["Garbage", "Road", "Water", "Trees", "Electricity", "Other"];
 
+interface PrefilledData {
+  image: string;
+  title: string;
+  description: string;
+  category: string;
+  location: {
+    lat: number;
+    lng: number;
+    area_name?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+  };
+  ai_analysis?: {
+    legit: number;
+    severity: number;
+    confidence_label: string;
+    explanation?: string;
+  };
+}
+
 const CreatePost = () => {
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageData, setImageData] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
+  const location = useLocation();
+  const prefilledData = (location.state as { prefilled?: PrefilledData })?.prefilled;
+
+  const [imagePreview, setImagePreview] = useState<string | null>(prefilledData?.image || null);
+  const [imageData, setImageData] = useState<string | null>(prefilledData?.image || null);
+  const [title, setTitle] = useState(prefilledData?.title || "");
+  const [description, setDescription] = useState(prefilledData?.description || "");
+  const [category, setCategory] = useState(prefilledData?.category || "");
   const [locationLabel, setLocationLabel] = useState("Detecting location…");
-  const [geo, setGeo] = useState<{ lat?: number; lng?: number }>({});
-  const [areaName, setAreaName] = useState("");
-  const [addressLine, setAddressLine] = useState("");
-  const [city, setCity] = useState("");
-  const [stateName, setStateName] = useState("");
+  const [geo, setGeo] = useState<{ lat?: number; lng?: number }>(
+    prefilledData?.location ? { lat: prefilledData.location.lat, lng: prefilledData.location.lng } : {}
+  );
+  const [areaName, setAreaName] = useState(prefilledData?.location?.area_name || "");
+  const [city, setCity] = useState(prefilledData?.location?.city || "");
+  const [stateName, setStateName] = useState(prefilledData?.location?.state || "");
   const [visibility, setVisibility] = useState<"public" | "masked">("public");
   const [anonymous, setAnonymous] = useState(false);
   const [dismissedSuggestions, setDismissedSuggestions] = useState<string[]>([]);
@@ -129,7 +156,14 @@ const CreatePost = () => {
   };
 
   useEffect(() => {
-    detectLocation();
+    // If we have prefilled data with location, use it
+    if (prefilledData?.location?.lat && prefilledData?.location?.lng) {
+      setGeo({ lat: prefilledData.location.lat, lng: prefilledData.location.lng });
+      setLocationLabel(`Lat ${prefilledData.location.lat.toFixed(4)}, Lng ${prefilledData.location.lng.toFixed(4)}`);
+    } else {
+      // Otherwise, try to detect location
+      detectLocation();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -168,10 +202,9 @@ const CreatePost = () => {
       description: description.trim(),
       category: category.toLowerCase(),
       location: {
-        lat: geo.lat,
-        lng: geo.lng,
+        lat: geo.lat!,
+        lng: geo.lng!,
         area_name: areaName || undefined,
-        address: addressLine || undefined,
         city: city || undefined,
         state: stateName || undefined,
         country: "India",
@@ -179,6 +212,13 @@ const CreatePost = () => {
       },
       images: imageData ? [imageData] : undefined,
       anonymous,
+      // Include AI analysis if available from pre-analysis
+      ai_analysis: prefilledData?.ai_analysis,
+      suggested_status: prefilledData?.ai_analysis 
+        ? (prefilledData.ai_analysis.legit < 0.3 ? 'flagged' 
+           : prefilledData.ai_analysis.legit >= 0.7 ? 'community_verified' 
+           : 'pending')
+        : undefined,
     };
 
     mutation.mutate(payload);
@@ -202,6 +242,45 @@ const CreatePost = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Image Preview at Top */}
+          {imagePreview && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Image Preview</label>
+              <div className="relative">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-full h-64 object-cover rounded-lg"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={() => {
+                    setImagePreview(null);
+                    setImageData(null);
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* AI Analysis Info if available */}
+          {prefilledData?.ai_analysis && (
+            <Alert className="bg-blue-50 border-blue-200">
+              <Lightbulb className="h-4 w-4 text-blue-600" />
+              <AlertDescription>
+                <p className="font-semibold text-sm text-blue-900 mb-1">AI Analysis</p>
+                <p className="text-sm text-blue-800">
+                  {prefilledData.ai_analysis.explanation || `Confidence: ${prefilledData.ai_analysis.confidence_label}`}
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="space-y-2">
             <label className="text-sm font-medium">Title</label>
             <Input
@@ -225,11 +304,11 @@ const CreatePost = () => {
             </p>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Upload Image {category === "Garbage" && "(Mandatory for garbage posts)"}
-            </label>
-            {!imagePreview ? (
+          {!imagePreview && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Upload Image {category === "Garbage" && "(Mandatory for garbage posts)"}
+              </label>
               <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border rounded cursor-pointer hover:bg-accent/50 transition-colors">
                 <Upload className="w-10 h-10 text-muted-foreground mb-2" />
                 <span className="text-sm text-muted-foreground">
@@ -243,28 +322,8 @@ const CreatePost = () => {
                   onChange={handleImageUpload}
                 />
               </label>
-            ) : (
-              <div className="relative">
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="w-full h-48 object-cover rounded"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="absolute top-2 right-2"
-                  onClick={() => {
-                    setImagePreview(null);
-                    setImageData(null);
-                  }}
-                >
-                  Remove
-                </Button>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Category</label>
@@ -282,41 +341,6 @@ const CreatePost = () => {
             </Select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Area / Landmark</label>
-              <Input
-                placeholder="e.g. Sector 12 park"
-                value={areaName}
-                onChange={(e) => setAreaName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Address</label>
-              <Input
-                placeholder="Street / block"
-                value={addressLine}
-                onChange={(e) => setAddressLine(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">City</label>
-              <Input
-                placeholder="City"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">State</label>
-              <Input
-                placeholder="State"
-                value={stateName}
-                onChange={(e) => setStateName(e.target.value)}
-              />
-            </div>
-          </div>
-
           <div className="space-y-2">
             <label className="text-sm font-medium">GPS Coordinates</label>
             <Input value={locationLabel} readOnly className="bg-muted" />
@@ -330,7 +354,37 @@ const CreatePost = () => {
               <MapPin className="w-4 h-4 mr-2" />
               {locationLabel.includes("Lat") ? "Refresh location" : "Auto-detect Location"}
             </Button>
+            <p className="text-xs text-muted-foreground">
+              Address is automatically derived from GPS coordinates
+            </p>
           </div>
+
+          {/* Read-only address display (derived from GPS) */}
+          {(areaName || city || stateName) && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Location Details (Auto-detected)</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {areaName && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Area / Landmark</p>
+                    <Input value={areaName} readOnly className="bg-muted" />
+                  </div>
+                )}
+                {city && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">City</p>
+                    <Input value={city} readOnly className="bg-muted" />
+                  </div>
+                )}
+                {stateName && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">State</p>
+                    <Input value={stateName} readOnly className="bg-muted" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* AI Tips */}
           {suggestions.length > 0 && (

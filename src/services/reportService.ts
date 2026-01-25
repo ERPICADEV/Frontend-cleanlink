@@ -112,6 +112,16 @@ export interface CreateReportPayload {
   images?: string[]; // Change to array of URLs, not base64 data
   anonymous?: boolean;
   client_idempotency_key?: string;
+  ai_analysis?: {
+    legit: number;
+    severity: number;
+    duplicate_prob?: number;
+    confidence_label?: string;
+    explanation?: string;
+    vision_insights?: string[] | null;
+    insights?: string[];
+  };
+  suggested_status?: string;
 }
 
 
@@ -280,5 +290,33 @@ export const fetchMapReports = async (params?: {
     { params }
   );
   return data.features;
+};
+
+export interface AnalyzeReportResponse {
+  category: string;
+  title: string;
+  description: string;
+  location: ReportLocation;
+  ai_analysis: {
+    legit: number;
+    severity: number;
+    duplicate_prob: number;
+    confidence_label: string;
+    explanation?: string;
+    vision_insights?: string[] | null;
+    insights?: string[];
+  };
+}
+
+export const analyzeReport = async (payload: {
+  image: string; // base64 data URL
+  lat: number;
+  lng: number;
+}): Promise<AnalyzeReportResponse> => {
+  const { data } = await apiClient.post<AnalyzeReportResponse>(
+    "/reports/analyze-report",
+    payload
+  );
+  return data;
 };
 
