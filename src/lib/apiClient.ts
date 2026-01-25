@@ -2,7 +2,7 @@ import axios, { AxiosError } from "axios";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
-  "https://cleanlink-backend.onrender.com/api/v1";
+  "https://backend-cleanlink.onrender.com/api/v1";
 
 let authToken: string | null = null;
 

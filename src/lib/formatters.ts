@@ -84,7 +84,7 @@ type ImageObject = { url?: string };
 // Normalize backend-relative image URLs to absolute (API origin)
 const apiBase =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
-  "https://cleanlink-backend.onrender.com/api/v1";
+  "https://backend-cleanlink.onrender.com/api/v1";
 // Try to strip trailing "/api/v1" to get origin
 const apiOrigin = apiBase.replace(/\/api\/v1$/, "");
 const normalizeImageUrl = (url: string) => {
