@@ -79,12 +79,12 @@ export const formatLocationName = (location?: ReportLocation | RegionLocation | 
   return "Unknown location";
 };
 
-type ImageObject = { url?: string };
+type ImageObject                                                         = { url?: string };
 
 // Normalize backend-relative image URLs to absolute (API origin)
 const apiBase =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
-  "https://backend-cleanlink.onrender.com/api/v1";
+  "http://localhost:3000/api/v1";
 // Try to strip trailing "/api/v1" to get origin
 const apiOrigin = apiBase.replace(/\/api\/v1$/, "");
 const normalizeImageUrl = (url: string) => {
